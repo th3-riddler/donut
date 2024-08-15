@@ -196,7 +196,7 @@ void Chessboard::handleEvent(const SDL_Event& e) {
         // Check if a piece is at the clicked position
         draggedPiece = getPieceAt(file, rank);
         std::cout << "Piece: " << draggedPiece << std::endl;
-        if ((whiteToMove && Piece::isWhite(draggedPiece)) || (!whiteToMove && !Piece::isWhite(draggedPiece))) { // Check if the piece belongs to the player whose turn it is
+        if (((whiteToMove && Piece::isWhite(draggedPiece)) || (!whiteToMove && !Piece::isWhite(draggedPiece))) && draggedPiece != Piece::None) { // Check if the piece belongs to the player whose turn it is
             dragging = true;
             draggedPieceStartX = file;
             draggedPieceStartY = rank;
