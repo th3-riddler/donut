@@ -1,16 +1,16 @@
 #ifndef MOVE_HPP
 #define MOVE_HPP
 
-#include "pieceType.hpp" // Include the header file where PieceType is defined
+#include "piece.hpp" // Include the header file where PieceType is defined
 
 struct Move {
     int fromFile;
     int fromRank;
     int toFile;
     int toRank;
-    PieceType piece;
+    Piece piece;
 
-    Move(int fromFile, int fromRank, int toFile, int toRank, PieceType piece)
+    Move(int fromFile, int fromRank, int toFile, int toRank, Piece piece)
         : fromFile(fromFile), fromRank(fromRank), toFile(toFile), toRank(toRank), piece(piece) {}
 };
 
