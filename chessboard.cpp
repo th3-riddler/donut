@@ -158,7 +158,7 @@ void Chessboard::parseFEN(const std::string& fen) {
     printBitboards();
 
     // Parse active color
-    whiteToMove = (activeColor == "w");
+    sideToMove = activeColor == "w" ? 0 : 1;
 
     // Parse castling rights
     bitboard.whiteKingCastle = (castling.find('K') != std::string::npos);
@@ -196,7 +196,7 @@ void Chessboard::handleEvent(const SDL_Event& e) {
         // Check if a piece is at the clicked position
         draggedPiece = getPieceAt(file, rank);
         std::cout << "Piece: " << draggedPiece << std::endl;
-        if (((whiteToMove && Piece::isWhite(draggedPiece)) || (!whiteToMove && !Piece::isWhite(draggedPiece))) && draggedPiece != Piece::None) { // Check if the piece belongs to the player whose turn it is
+        if ((Piece::isColor(draggedPiece, sideToMove)) && draggedPiece != Piece::None) { // Check if the piece belongs to the player whose turn it is
             dragging = true;
             draggedPieceStartX = file;
             draggedPieceStartY = rank;
@@ -343,8 +343,9 @@ void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRan
         
         *bitboard.bitboards[piece] |= (1ULL << endPosition);    // Posiziona il pezzo
 
-        whiteToMove = !whiteToMove;
+        //cambia il turno tra 0 e 8
+        sideToMove ^= 8;
         std::cout << "Piece moved successfully!" << std::endl;
-        std::cout << "White to move: " << whiteToMove << std::endl;
+        std::cout << "White to move: " << sideToMove << std::endl;
     }
 }

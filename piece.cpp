@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "piece.hpp"
+#include <iostream>
 
 
 // Piece Types

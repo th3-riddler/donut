@@ -126,7 +126,7 @@ class Chessboard {
 
         void printBitboards() const;
 
-        bool whiteToMove = true;
+        int sideToMove = 0; // 0 = white, 8 = black
     private:
         SDL_Renderer* renderer;
         const int squareSize = 100;
