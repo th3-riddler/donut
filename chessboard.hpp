@@ -117,6 +117,7 @@ class Chessboard {
 
 
         std::vector<Move> moves;
+
         std::vector<Move> generateMoves();
         std::vector<Move> generatePseudoLegalMoves();
         void initializeFromFEN(const std::string& fen);
@@ -143,13 +144,15 @@ class Chessboard {
         void drawPieces();
         void drawDraggedPiece(int pieceToDraw);
         void generateSlidingMoves(int startSquare, int piece);
-        void getPawnMoves(int square, int piece, std::vector<Move>& moves);
-        void highlightSquares(int fromFile, int fromRank, int toFile, int toRank);
-        void colorSquare(int file, int rank, int r, int g, int b);
+        void generateLeapingMoves(int startSquare, int piece);
+
+        void colorSquare();
         bool isInValidMoveList(int file, int rank, int piece);
         
+        void getPawnMoves(int square, int piece);
 
         uint64_t maskPawnAttacks(int square, bool isWhite) const;
+        uint64_t maskKnightAttacks(int square) const;
 
         // Drag-and-drop related members
         bool dragging = false;

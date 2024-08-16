@@ -14,22 +14,35 @@ Chessboard::Chessboard(SDL_Renderer* renderer) : renderer(renderer) {
 }
 
 void Chessboard::drawGameState() {
+
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); // Imposta la modalità di blending
+
     draw();
-    drawPieces();
+    
     if (dragging) {
+        colorSquare();
+    }
 
-        for (const auto& move : moves) {
-            // std::cout << "Move: " << move.fromFile << ", " << move.fromRank << " --> " << move.toFile << ", " << move.toRank << std::endl;
-            // highlightSquares(move.fromFile, move.fromRank, move.toFile, move.toRank);
+    drawPieces();
 
-            if (move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY) {
-                // std::cout << "Coloring square: " << move.toFile << ", " << move.toRank << std::endl;
-                colorSquare(move.toFile, move.toRank, 150, 0, 0);
-            }
-        }
-
+    if (dragging) {
         // print the position of the dragged piece
         drawDraggedPiece(this->draggedPiece);
+    }
+}
+
+void Chessboard::colorSquare() {
+    // Imposta il colore per le caselle evidenziate
+    SDL_SetRenderDrawColor(renderer, 248, 52, 52, 150); // Usa un'opacità fissa
+
+    // Disegna tutte le caselle evidenziate in un batch
+    SDL_Rect dstRect = {0, 0, squareSize, squareSize};
+    for (const auto& move : moves) {
+        if (move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY) {
+            dstRect.x = move.toFile * squareSize;
+            dstRect.y = (7 - move.toRank) * squareSize;
+            SDL_RenderFillRect(renderer, &dstRect);
+        }
     }
 }
 
@@ -192,12 +205,6 @@ void Chessboard::parseFEN(const std::string& fen) {
     bitboard.fullMoveCounter = std::stoi(fullMove);
 }
 
-void Chessboard::colorSquare(int file, int rank, int r, int g, int b) {
-    SDL_Rect square = {file * squareSize, rank * squareSize, squareSize, squareSize};
-    SDL_SetRenderDrawColor(renderer, r, g, b, 100);
-    SDL_RenderFillRect(renderer, &square);
-}
-
 void Chessboard::handleEvent(const SDL_Event& e) {
     // std::cout << "Chessboard::handleEvent: chessboard address = " << this << std::endl;
     // printBitboards();
@@ -207,7 +214,7 @@ void Chessboard::handleEvent(const SDL_Event& e) {
 
         // Convert mouse position to board coordinates
         int file = mouseX / squareSize;
-        int rank = mouseY / squareSize;
+        int rank = 7 - (mouseY / squareSize);
 
         std::cout << "Clicked square: Rank --> " << rank << ", File --> " << file << std::endl;
 
@@ -222,7 +229,7 @@ void Chessboard::handleEvent(const SDL_Event& e) {
             this->draggedPiece = draggedPiece;
 
             // temporarily remove the piece from the board
-            *bitboard.bitboards[this->draggedPiece] &= ~(1ULL << ((7 - rank) * 8 + file));
+            *bitboard.bitboards[this->draggedPiece] &= ~(1ULL << (rank * 8 + file));
         }
     }
     if (e.type == SDL_MOUSEMOTION && dragging) {
@@ -237,13 +244,13 @@ void Chessboard::handleEvent(const SDL_Event& e) {
 
         // Convert mouse position to board coordinates
         int file = mouseX / squareSize;
-        int rank = mouseY / squareSize;
+        int rank = 7 - (mouseY / squareSize);
 
 
         if ((file == draggedPieceStartX && rank == draggedPieceStartY) || !isInValidMoveList(file, rank, this->draggedPiece)) {
             // Put the piece back on the board
             std::cout << "Putting piece back on the board..." << std::endl;
-            *bitboard.bitboards[this->draggedPiece] |= 1ULL << ((7 - draggedPieceStartY) * 8 + draggedPieceStartX);
+            *bitboard.bitboards[this->draggedPiece] |= 1ULL << (draggedPieceStartY * 8 + draggedPieceStartX);
         } else {
             // Create a move object and validate the move
             // Move move(draggedPieceStartX, draggedPieceStartY, file, rank, static_cast<PieceType>(draggedPiece));
@@ -261,11 +268,6 @@ void Chessboard::handleEvent(const SDL_Event& e) {
         draggedPieceStartY = -1;
         draggedPieceX = -1;
         draggedPieceY = -1;
-
-        // // Drop the piece and update the board state
-        // bitboard.movePiece(draggedPieceStartX, draggedPieceStartY, file, rank, static_cast<PieceType>(draggedPiece));
-
-        
     }
 }
 
@@ -283,7 +285,7 @@ bool Chessboard::isInValidMoveList(int file, int rank, int piece) {
 int Chessboard::getPieceAt(int file, int rank) const {
     // printBitboards();
 
-    uint64_t pos = 1ULL << ((7 - rank) * 8 + file);
+    uint64_t pos = 1ULL << (rank * 8 + file);
     // std::cout << "Position: " << pos << std::endl;
 
     for (const auto& pair : bitboard.bitboards) {
@@ -306,13 +308,12 @@ void Chessboard::printBitboards() const {
 
 
 std::vector<Move> Chessboard::generatePseudoLegalMoves() {
+    
     moves.clear();
 
     // std::cout << "Generating pseudo-legal moves..." << std::endl;
 
     for (int startSquare = 0; startSquare < 64; ++startSquare) {
-        // std::cout << "Start square: " << startSquare << std::endl;
-        // std::cout << "Coordinate: " << startSquare % 8 << ", " << startSquare / 8 << std::endl;
         int piece = getPieceAt(startSquare % 8, startSquare / 8);
         // std::cout << "Piece: " << piece << std::endl;
 
@@ -322,8 +323,9 @@ std::vector<Move> Chessboard::generatePseudoLegalMoves() {
                 if (Piece::isSlidingPiece(piece)) {
                     // Generate sliding piece moves
                     generateSlidingMoves(startSquare, piece);
+                    // getPawnMoves(startSquare, piece);
                 } else {
-                    // Generate non-sliding piece moves
+                    // generateLeapingMoves(startSquare, piece);
                 }
             }
         }
@@ -339,6 +341,15 @@ std::vector<Move> Chessboard::generatePseudoLegalMoves() {
     return moves;
 }
 
+
+// void Chessboard::generateLeapingMoves(int startSquare, int piece) {
+
+//     if (Piece::getType(piece) == Piece::Pawn) {
+//         getPawnMoves(startSquare, piece, moves);
+//     } else if (Piece::getType(piece) == Piece::Knight) {
+//     } else if (Piece::getType(piece) == Piece::King) {
+//     }
+// }
 
 void Chessboard::generateSlidingMoves(int startSquare, int piece) {
 
@@ -374,15 +385,15 @@ void Chessboard::generateSlidingMoves(int startSquare, int piece) {
 //     //return moves;
 // }
 
-void Chessboard::getPawnMoves(int square, int piece, std::vector<Move>& moves) {
-    // Check if the pawn is white or black
-    bool isWhite = Piece::isWhite(piece);
+void Chessboard::getPawnMoves(int square, int piece) {
 
-    // Check if the pawn is on the starting rank
-    bool onStartingRank = (isWhite && square / 8 == 1) || (!isWhite && square / 8 == 6);
+    uint64_t attacks = maskKnightAttacks(square);
 
-    // Check if the pawn is on the promotion rank
-    bool onPromotionRank = (isWhite && square / 8 == 6) || (!isWhite && square / 8 == 1);
+    for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
+        if (attacks & (1ULL << targetSquare)) {
+            moves.push_back(Move(square % 8, square / 8, targetSquare % 8, targetSquare / 8, piece));
+        }
+    }
 }
 
 uint64_t Chessboard::maskPawnAttacks(int square, bool isWhite) const {
@@ -391,18 +402,58 @@ uint64_t Chessboard::maskPawnAttacks(int square, bool isWhite) const {
 
     if (isWhite) {
         if (square % 8 != 0) {
-            attacks |= pos << 7;
+            attacks |= pos >> 7;
         }
         if (square % 8 != 7) {
-            attacks |= pos << 9;
+            attacks |= pos >> 9;
         }
     } else {
         if (square % 8 != 0) {
-            attacks |= pos >> 9;
+            attacks |= pos << 9;
         }
         if (square % 8 != 7) {
-            attacks |= pos >> 7;
+            attacks |= pos << 7;
         }
+    }
+
+    return attacks;
+}
+
+uint64_t Chessboard::maskKnightAttacks(int square) const {
+    uint64_t attacks = 0;
+    uint64_t pos = 1ULL << square;
+
+    // Due file in alto, una colonna a sinistra
+    if (square % 8 > 0 && square / 8 < 6) { 
+        attacks |= pos << 15;
+    }
+    // Due file in alto, una colonna a destra
+    if (square % 8 < 7 && square / 8 < 6) {
+        attacks |= pos << 17;
+    }
+    // Due file in basso, una colonna a sinistra
+    if (square % 8 > 0 && square / 8 > 1) {
+        attacks |= pos >> 17;
+    }
+    // Due file in basso, una colonna a destra
+    if (square % 8 < 7 && square / 8 > 1) {
+        attacks |= pos >> 15;
+    }
+    // Una fila in alto, due colonne a sinistra
+    if (square % 8 > 1 && square / 8 < 7) {
+        attacks |= pos << 6;
+    }
+    // Una fila in alto, due colonne a destra
+    if (square % 8 < 6 && square / 8 < 7) {
+        attacks |= pos << 10;
+    }
+    // Una fila in basso, due colonne a sinistra
+    if (square % 8 > 1 && square / 8 > 0) {
+        attacks |= pos >> 10;
+    }
+    // Una fila in basso, due colonne a destra
+    if (square % 8 < 6 && square / 8 > 0) {
+        attacks |= pos >> 6;
     }
 
     return attacks;
@@ -419,8 +470,8 @@ void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRan
         return;
     }
 
-    int startPosition = (7 - startRank) * 8 + startFile;
-    int endPosition = (7 - endRank) * 8 + endFile;
+    int startPosition = startRank * 8 + startFile;
+    int endPosition = endRank * 8 + endFile;
 
     // Rimuovi il pezzo dalla posizione di partenza
     if (piece != Piece::None) {
