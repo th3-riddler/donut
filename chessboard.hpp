@@ -115,8 +115,10 @@ class Chessboard {
         void drawGameState();
         void handleEvent(const SDL_Event& e);
 
-        std::vector<Move> generateMoves() const;
-        std::vector<Move> generatePseudoLegalMoves() const;
+
+        std::vector<Move> moves;
+        std::vector<Move> generateMoves();
+        std::vector<Move> generatePseudoLegalMoves();
         void initializeFromFEN(const std::string& fen);
 
         BitBoard bitboard;
@@ -140,6 +142,12 @@ class Chessboard {
         void draw();
         void drawPieces();
         void drawDraggedPiece(int pieceToDraw);
+        void generateSlidingMoves(int startSquare, int piece);
+        void getPawnMoves(int square, int piece, std::vector<Move>& moves);
+        void highlightSquares(int fromFile, int fromRank, int toFile, int toRank);
+        void colorSquare(int file, int rank, int r, int g, int b);
+        bool isInValidMoveList(int file, int rank, int piece);
+        
 
         uint64_t maskPawnAttacks(int square, bool isWhite) const;
 

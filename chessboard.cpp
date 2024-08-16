@@ -1,6 +1,7 @@
 #include "chessboard.hpp"
 #include "gameWindow.hpp"
 #include "macros.hpp"
+#include "preComputedMoveData.hpp"
 
 #include <SDL2/SDL_image.h>
 #include <sstream>
@@ -16,6 +17,17 @@ void Chessboard::drawGameState() {
     draw();
     drawPieces();
     if (dragging) {
+
+        for (const auto& move : moves) {
+            // std::cout << "Move: " << move.fromFile << ", " << move.fromRank << " --> " << move.toFile << ", " << move.toRank << std::endl;
+            // highlightSquares(move.fromFile, move.fromRank, move.toFile, move.toRank);
+
+            if (move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY) {
+                // std::cout << "Coloring square: " << move.toFile << ", " << move.toRank << std::endl;
+                colorSquare(move.toFile, move.toRank, 150, 0, 0);
+            }
+        }
+
         // print the position of the dragged piece
         drawDraggedPiece(this->draggedPiece);
     }
@@ -155,7 +167,7 @@ void Chessboard::parseFEN(const std::string& fen) {
         }
     }
     // std::cout << "Chessboard::FEN: chessboard address = " << this << std::endl;
-    printBitboards();
+    // printBitboards();
 
     // Parse active color
     sideToMove = activeColor == "w" ? 0 : 1;
@@ -180,6 +192,12 @@ void Chessboard::parseFEN(const std::string& fen) {
     bitboard.fullMoveCounter = std::stoi(fullMove);
 }
 
+void Chessboard::colorSquare(int file, int rank, int r, int g, int b) {
+    SDL_Rect square = {file * squareSize, rank * squareSize, squareSize, squareSize};
+    SDL_SetRenderDrawColor(renderer, r, g, b, 100);
+    SDL_RenderFillRect(renderer, &square);
+}
+
 void Chessboard::handleEvent(const SDL_Event& e) {
     // std::cout << "Chessboard::handleEvent: chessboard address = " << this << std::endl;
     // printBitboards();
@@ -196,6 +214,7 @@ void Chessboard::handleEvent(const SDL_Event& e) {
         // Check if a piece is at the clicked position
         draggedPiece = getPieceAt(file, rank);
         std::cout << "Piece: " << draggedPiece << std::endl;
+
         if ((Piece::isColor(draggedPiece, sideToMove)) && draggedPiece != Piece::None) { // Check if the piece belongs to the player whose turn it is
             dragging = true;
             draggedPieceStartX = file;
@@ -220,17 +239,21 @@ void Chessboard::handleEvent(const SDL_Event& e) {
         int file = mouseX / squareSize;
         int rank = mouseY / squareSize;
 
-        if (file == draggedPieceStartX && rank == draggedPieceStartY) {
+
+        if ((file == draggedPieceStartX && rank == draggedPieceStartY) || !isInValidMoveList(file, rank, this->draggedPiece)) {
             // Put the piece back on the board
-            *bitboard.bitboards[this->draggedPiece] |= 1ULL << ((7 - rank) * 8 + file);
+            std::cout << "Putting piece back on the board..." << std::endl;
+            *bitboard.bitboards[this->draggedPiece] |= 1ULL << ((7 - draggedPieceStartY) * 8 + draggedPieceStartX);
         } else {
             // Create a move object and validate the move
             // Move move(draggedPieceStartX, draggedPieceStartY, file, rank, static_cast<PieceType>(draggedPiece));
+            std::cout << "Moving piece..." << std::endl;
             movePiece(draggedPieceStartX, draggedPieceStartY, file, rank, this->draggedPiece);
-        }
 
-        // // Drop the piece and update the board state
-        // bitboard.movePiece(draggedPieceStartX, draggedPieceStartY, file, rank, static_cast<PieceType>(draggedPiece));
+            std::cout << "Generating pseudo-legal moves..." << std::endl;
+            // Generate pseudo-legal moves
+            moves = generatePseudoLegalMoves();
+        }
 
         dragging = false;
         this->draggedPiece = 0;
@@ -238,7 +261,23 @@ void Chessboard::handleEvent(const SDL_Event& e) {
         draggedPieceStartY = -1;
         draggedPieceX = -1;
         draggedPieceY = -1;
+
+        // // Drop the piece and update the board state
+        // bitboard.movePiece(draggedPieceStartX, draggedPieceStartY, file, rank, static_cast<PieceType>(draggedPiece));
+
+        
     }
+}
+
+bool Chessboard::isInValidMoveList(int file, int rank, int piece) {
+    for (const auto& move : moves) {
+        if (move.piece == piece && move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY && move.toFile == file && move.toRank == rank) {
+            std::cout << "Valid move!" << std::endl;
+            return true;
+        }
+    }
+    std::cout << "Invalid move!" << std::endl;
+    return false;
 }
 
 int Chessboard::getPieceAt(int file, int rank) const {
@@ -248,9 +287,9 @@ int Chessboard::getPieceAt(int file, int rank) const {
     // std::cout << "Position: " << pos << std::endl;
 
     for (const auto& pair : bitboard.bitboards) {
-        std::cout << "Checking Piece: " << pair.first << " Bitboard: " << pair.second << std::endl;
+        // std::cout << "Checking Piece: " << pair.first << " Bitboard: " << pair.second << std::endl;
         if (*pair.second & pos) {
-            std::cout << "Found Piece: " << pair.first << " at position: " << pos << std::endl;
+            // std::cout << "Found Piece: " << pair.first << " at position: " << pos << std::endl;
             return pair.first;
         }
     }
@@ -266,24 +305,76 @@ void Chessboard::printBitboards() const {
 }
 
 
-std::vector<Move> Chessboard::generatePseudoLegalMoves() const {
-    std::vector<Move> moves;
+std::vector<Move> Chessboard::generatePseudoLegalMoves() {
+    moves.clear();
 
-    for (int square = 0; square < 64; ++square) {
-       int piece = getPieceAt(square % 8, square / 8);
+    // std::cout << "Generating pseudo-legal moves..." << std::endl;
+
+    for (int startSquare = 0; startSquare < 64; ++startSquare) {
+        // std::cout << "Start square: " << startSquare << std::endl;
+        // std::cout << "Coordinate: " << startSquare % 8 << ", " << startSquare / 8 << std::endl;
+        int piece = getPieceAt(startSquare % 8, startSquare / 8);
+        // std::cout << "Piece: " << piece << std::endl;
+
+        if (piece != Piece::None){
+            // std::cout << "Entered!\n" << std::endl;
+            if (Piece::isColor(piece, sideToMove)) {
+                if (Piece::isSlidingPiece(piece)) {
+                    // Generate sliding piece moves
+                    generateSlidingMoves(startSquare, piece);
+                } else {
+                    // Generate non-sliding piece moves
+                }
+            }
+        }
     }
 
+    std::cout << moves.size() << std::endl;
+
+    // print the moves
+    // for (const auto& move : moves) {
+    //     std::cout << "Move: " << move.fromFile << ", " << move.fromRank << " --> " << move.toFile << ", " << move.toRank << std::endl;
+    // }
+
     return moves;
 }
 
 
-std::vector<Move> Chessboard::generateMoves() const {
-    std::vector<Move> moves;
+void Chessboard::generateSlidingMoves(int startSquare, int piece) {
 
-    return moves;
+    int startDirIndex = (Piece::getType(piece) == Piece::Bishop) ? 4 : 0;
+    int endDirIndex = (Piece::getType(piece) == Piece::Rook) ? 4 : 8;
+
+    for (int directionIndex = startDirIndex; directionIndex < endDirIndex; ++directionIndex) {
+        for (int n = 0; n < preComputedMoveData::numSquaresToEdge[startSquare][directionIndex]; ++n) {
+            int targetSquare = startSquare + preComputedMoveData::directionOffsets[directionIndex] * (n + 1);
+            int targetPiece = getPieceAt(targetSquare % 8, targetSquare / 8);
+
+            // Blocked by friendly piece
+            if (Piece::isColor(targetPiece, sideToMove)) {
+                // std::cout << "Blocked by friendly piece!" << std::endl;
+                break;
+            }
+
+            moves.push_back(Move(startSquare % 8, startSquare / 8, targetSquare % 8, targetSquare / 8, piece));
+            std::cout << "Move: " << startSquare % 8 << ", " << startSquare / 8 << " --> " << targetSquare % 8 << ", " << targetSquare / 8 << std::endl;
+
+            // Blocked by enemy piece
+            if (Piece::isColor(targetPiece, sideToMove ^ 8)) {
+                // std::cout << "Blocked by enemy piece!" << std::endl;
+                break;
+            }
+        }
+    }
 }
 
-void getPawnMoves(int square, int piece, std::vector<Move>& moves) {
+// std::vector<Move> Chessboard::generateMoves() {
+//     // std::vector<Move> moves;
+
+//     //return moves;
+// }
+
+void Chessboard::getPawnMoves(int square, int piece, std::vector<Move>& moves) {
     // Check if the pawn is white or black
     bool isWhite = Piece::isWhite(piece);
 

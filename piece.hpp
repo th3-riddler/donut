@@ -45,6 +45,8 @@ class Piece {
         static int getType (int piece);
 
         static char getSymbol (int piece);
+
+        static bool isSlidingPiece (int piece);
 };
 
 #endif // PIECE_HPP

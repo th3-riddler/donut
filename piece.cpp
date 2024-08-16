@@ -70,3 +70,8 @@ char Piece::getSymbol (int piece) {
     }
     return Piece::isWhite(piece) ? symbol : tolower(symbol);
 }
+
+bool Piece::isSlidingPiece (int piece) {
+    int pieceType = Piece::getType(piece);
+    return pieceType == Bishop || pieceType == Rook || pieceType == Queen;
+}

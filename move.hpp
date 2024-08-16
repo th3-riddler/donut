@@ -8,9 +8,9 @@ struct Move {
     int fromRank;
     int toFile;
     int toRank;
-    Piece piece;
+    int piece;
 
-    Move(int fromFile, int fromRank, int toFile, int toRank, Piece piece)
+    Move(int fromFile, int fromRank, int toFile, int toRank, int piece)
         : fromFile(fromFile), fromRank(fromRank), toFile(toFile), toRank(toRank), piece(piece) {}
 };
 
