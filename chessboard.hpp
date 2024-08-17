@@ -136,6 +136,12 @@ class Chessboard {
         const int boardSize = 8;
         enum { rook, bishop };
 
+        uint64_t bishopMasks[64];
+        uint64_t rookMasks[64];
+
+        uint64_t bishopAttacks[64][512];
+        uint64_t rookAttacks[64][4096];
+
         const char *squareToCoordinates[64] = {
             "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
             "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
@@ -169,7 +175,9 @@ class Chessboard {
         uint64_t maskBishopAttacks(int square) const;
         uint64_t maskRookAttacks(int square) const;
 
-        uint64_t bishopAttackOnTheFly(int square, uint64_t block) const;
+        void initSlidingAttacks(int bishop);
+
+        uint64_t bishopAttacksOnTheFly(int square, uint64_t block) const;
         uint64_t rookAttacksOnTheFly(int square, uint64_t block) const;
 
         uint64_t setOccupancy(int index, int bitsInMask, uint64_t attackMask) const;
@@ -179,6 +187,8 @@ class Chessboard {
         uint64_t findMagicNumber(int square, int relevantBits, int bishop) const;
         void initMagicNumbers();
 
+        uint64_t getBishopAttacks(int square, uint64_t occupancy) const;
+        uint64_t getRookAttacks(int square, uint64_t occupancy) const;
 
         // Count bits within a bitboard
         static inline int countBits(uint64_t bitboard) {
@@ -190,6 +200,7 @@ class Chessboard {
             return count;
         }
 
+        // Get the index of the least significant bit
         static inline int getLSBIndex(uint64_t bitboard) {
             if (bitboard)
                 return countBits((bitboard & -bitboard) - 1);

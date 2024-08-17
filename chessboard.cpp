@@ -404,7 +404,23 @@ void Chessboard::generateSlidingMoves(int startSquare, int piece) {
 
 void Chessboard::getPawnMoves(int square, int piece) {
 
+    initSlidingAttacks(bishop);
+    initSlidingAttacks(rook);
 
+    uint64_t occupancy = 0ULL;
+    SET_BIT(occupancy, c5);
+    SET_BIT(occupancy, f2);
+    SET_BIT(occupancy, g7);
+    SET_BIT(occupancy, b2);
+    SET_BIT(occupancy, g5);
+    SET_BIT(occupancy, e2);
+    SET_BIT(occupancy, e7);
+
+
+    printBitboards(occupancy);
+
+    printBitboards(getRookAttacks(e5, occupancy));
+    // printBitboards(getRookAttacks(d4, occupancy));
 
     // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
     //     if (attacks & (1ULL << targetSquare)) {
@@ -554,7 +570,7 @@ uint64_t Chessboard::maskRookAttacks(int square) const {
 }
 
 // Generate Bishop Attacks on the fly
-uint64_t Chessboard::bishopAttackOnTheFly(int square, uint64_t block) const {
+uint64_t Chessboard::bishopAttacksOnTheFly(int square, uint64_t block) const {
     uint64_t attacks = 0;
 
     int rank, file;
@@ -673,7 +689,7 @@ uint64_t Chessboard::findMagicNumber(int square, int relevantBits, int bishop) c
 
     for (int index = 0; index < occupancyIndices; index++) {
         occupancies[index] = setOccupancy(index, relevantBits, attackMask);
-        attacks[index] = bishop ? bishopAttackOnTheFly(square, occupancies[index]) : rookAttacksOnTheFly(square, occupancies[index]);
+        attacks[index] = bishop ? bishopAttacksOnTheFly(square, occupancies[index]) : rookAttacksOnTheFly(square, occupancies[index]);
     }
 
     // Test Magic Numbers
@@ -706,6 +722,7 @@ uint64_t Chessboard::findMagicNumber(int square, int relevantBits, int bishop) c
     return 0ULL;
 }
 
+// Initialize Magic Numbers
 // void Chessboard::initMagicNumbers() {
 //     for (int square = 0; square < 64; square++) {
 //         std::cout << "0x" << std::hex << findMagicNumber(square, rookRelevantBits[square], rook) << "ULL, " << std::endl;
@@ -716,6 +733,50 @@ uint64_t Chessboard::findMagicNumber(int square, int relevantBits, int bishop) c
 //     }
 // }
 
+// Initialize Sliding Piece Attacks
+void Chessboard::initSlidingAttacks(int bishop) {
+    for (int square = 0; square < 64; square++) {
+        bishopMasks[square] = maskBishopAttacks(square);
+        rookMasks[square] = maskRookAttacks(square);
+
+        uint64_t attackMask = (bishop ? bishopMasks[square] : rookMasks[square]);
+
+        int relevantBitsCount = countBits(attackMask);
+        int occupancyIndices = (1 << relevantBitsCount);
+
+        for (int index = 0; index < occupancyIndices; index++) {
+            
+            if (bishop) {
+                uint64_t occupancy = setOccupancy(index, relevantBitsCount, bishopMasks[square]);
+                int magicIndex = (int)((occupancy * bishopMagicNumbers[square]) >> (64 - bishopRelevantBits[square]));
+                bishopAttacks[square][magicIndex] = bishopAttacksOnTheFly(square, occupancy);
+            }
+            else {
+                uint64_t occupancy = setOccupancy(index, relevantBitsCount, rookMasks[square]);
+                int magicIndex = (int)((occupancy * rookMagicNumbers[square]) >> (64 - rookRelevantBits[square]));
+                rookAttacks[square][magicIndex] = rookAttacksOnTheFly(square, occupancy);
+            }            
+        }
+    }
+}
+
+// Get Bishop Attacks
+uint64_t Chessboard::getBishopAttacks(int square, uint64_t occupancy) const {
+    occupancy &= bishopMasks[square];
+    occupancy *= bishopMagicNumbers[square];
+    occupancy >>= 64 - bishopRelevantBits[square];
+
+    return bishopAttacks[square][occupancy];
+}
+
+// Get Rook Attacks
+uint64_t Chessboard::getRookAttacks(int square, uint64_t occupancy) const {
+    occupancy &= rookMasks[square];
+    occupancy *= rookMagicNumbers[square];
+    occupancy >>= 64 - rookRelevantBits[square];
+
+    return rookAttacks[square][occupancy];
+}
 
 void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRank, int piece) {
     std::cout << "\nMoving piece: " << piece << " from (" << startFile << ", " << startRank << ") to (" << endFile << ", " << endRank << ")" << std::endl;
