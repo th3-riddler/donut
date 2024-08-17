@@ -60,6 +60,9 @@ class Chessboard {
 
         uint64_t bishopAttacks[64][512];
         uint64_t rookAttacks[64][4096];
+        uint64_t pawnAttacks[2][64];
+        uint64_t knightAttacks[64];
+        uint64_t kingAttacks[64];
 
         const char *squareToCoordinates[64] = {
             "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
@@ -111,14 +114,15 @@ class Chessboard {
         void colorSquare();
         bool isInValidMoveList(int file, int rank, int piece);
         
+        void initAll();
+        void initLeapersAttacks();
+        void initSlidingAttacks(int bishop);
 
         uint64_t maskPawnAttacks(int square, bool isWhite) const;
         uint64_t maskKnightAttacks(int square) const;
         uint64_t maskKingAttacks(int square) const;
         uint64_t maskBishopAttacks(int square) const;
         uint64_t maskRookAttacks(int square) const;
-
-        void initSlidingAttacks(int bishop);
 
         uint64_t bishopAttacksOnTheFly(int square, uint64_t block) const;
         uint64_t rookAttacksOnTheFly(int square, uint64_t block) const;
@@ -132,6 +136,7 @@ class Chessboard {
 
         uint64_t getBishopAttacks(int square, uint64_t occupancy) const;
         uint64_t getRookAttacks(int square, uint64_t occupancy) const;
+        uint64_t getQueenAttacks(int square, uint64_t occupancy) const;
 
         // Count bits within a bitboard
         static inline int countBits(uint64_t bitboard) {

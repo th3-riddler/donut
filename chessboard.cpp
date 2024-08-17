@@ -456,7 +456,12 @@ void Chessboard::printBoard() const {
 
 void Chessboard::getPawnMoves() {
 
-    
+    initAll();
+
+    uint64_t occupancy = 0ULL;
+    SET_BIT(occupancy, d5);
+
+    printBitboards(getRookAttacks(d4, occupancy));
 
     // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
     //     if (attacks & (1ULL << targetSquare)) {
@@ -667,6 +672,57 @@ uint64_t Chessboard::rookAttacksOnTheFly(int square, uint64_t block) const {
     return attacks;
 }
 
+void Chessboard::initAll() {
+    initLeapersAttacks();
+    initSlidingAttacks(bishop);
+    initSlidingAttacks(rook);
+}
+
+// Initialize Leaper Piece Attacks
+void Chessboard::initLeapersAttacks() {
+    // loop over 64 board squares
+    for (int square = 0; square < 64; square++)
+    {
+        // init pawn attacks
+        pawnAttacks[white][square] = maskPawnAttacks(square, white);
+        pawnAttacks[black][square] = maskPawnAttacks(square, black);
+        
+        // init knight attacks
+        knightAttacks[square] = maskKnightAttacks(square);
+        
+        // init king attacks
+        kingAttacks[square] = maskKingAttacks(square);
+    }
+}
+
+// Initialize Sliding Piece Attacks
+void Chessboard::initSlidingAttacks(int bishop) {
+    for (int square = 0; square < 64; square++) {
+        bishopMasks[square] = maskBishopAttacks(square);
+        rookMasks[square] = maskRookAttacks(square);
+
+        uint64_t attackMask = (bishop ? bishopMasks[square] : rookMasks[square]);
+
+        int relevantBitsCount = countBits(attackMask);
+        int occupancyIndices = (1 << relevantBitsCount);
+
+        for (int index = 0; index < occupancyIndices; index++) {
+            
+            if (bishop) {
+                uint64_t occupancy = setOccupancy(index, relevantBitsCount, bishopMasks[square]);
+                int magicIndex = (int)((occupancy * bishopMagicNumbers[square]) >> (64 - bishopRelevantBits[square]));
+                bishopAttacks[square][magicIndex] = bishopAttacksOnTheFly(square, occupancy);
+            }
+            else {
+                uint64_t occupancy = setOccupancy(index, relevantBitsCount, rookMasks[square]);
+                int magicIndex = (int)((occupancy * rookMagicNumbers[square]) >> (64 - rookRelevantBits[square]));
+                rookAttacks[square][magicIndex] = rookAttacksOnTheFly(square, occupancy);
+            }            
+        }
+    }
+}
+
+
 // Set occupancies
 uint64_t Chessboard::setOccupancy(int index, int bitsInMask, uint64_t attackMask) const {
     uint64_t occupancy = 0ULL;
@@ -769,33 +825,6 @@ uint64_t Chessboard::findMagicNumber(int square, int relevantBits, int bishop) c
 //     }
 // }
 
-// Initialize Sliding Piece Attacks
-void Chessboard::initSlidingAttacks(int bishop) {
-    for (int square = 0; square < 64; square++) {
-        bishopMasks[square] = maskBishopAttacks(square);
-        rookMasks[square] = maskRookAttacks(square);
-
-        uint64_t attackMask = (bishop ? bishopMasks[square] : rookMasks[square]);
-
-        int relevantBitsCount = countBits(attackMask);
-        int occupancyIndices = (1 << relevantBitsCount);
-
-        for (int index = 0; index < occupancyIndices; index++) {
-            
-            if (bishop) {
-                uint64_t occupancy = setOccupancy(index, relevantBitsCount, bishopMasks[square]);
-                int magicIndex = (int)((occupancy * bishopMagicNumbers[square]) >> (64 - bishopRelevantBits[square]));
-                bishopAttacks[square][magicIndex] = bishopAttacksOnTheFly(square, occupancy);
-            }
-            else {
-                uint64_t occupancy = setOccupancy(index, relevantBitsCount, rookMasks[square]);
-                int magicIndex = (int)((occupancy * rookMagicNumbers[square]) >> (64 - rookRelevantBits[square]));
-                rookAttacks[square][magicIndex] = rookAttacksOnTheFly(square, occupancy);
-            }            
-        }
-    }
-}
-
 // Get Bishop Attacks
 uint64_t Chessboard::getBishopAttacks(int square, uint64_t occupancy) const {
     occupancy &= bishopMasks[square];
@@ -812,6 +841,10 @@ uint64_t Chessboard::getRookAttacks(int square, uint64_t occupancy) const {
     occupancy >>= 64 - rookRelevantBits[square];
 
     return rookAttacks[square][occupancy];
+}
+
+uint64_t Chessboard::getQueenAttacks(int square, uint64_t occupancy) const {
+    return getBishopAttacks(square, occupancy) | getRookAttacks(square, occupancy);
 }
 
 // void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRank, int piece) {
