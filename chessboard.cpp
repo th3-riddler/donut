@@ -13,6 +13,18 @@ Chessboard::Chessboard(SDL_Renderer* renderer) : renderer(renderer) {
     loadPieceTextures();
 }
 
+enum enumSquare {
+  a1, b1, c1, d1, e1, f1, g1, h1,
+  a2, b2, c2, d2, e2, f2, g2, h2,
+  a3, b3, c3, d3, e3, f3, g3, h3,
+  a4, b4, c4, d4, e4, f4, g4, h4,
+  a5, b5, c5, d5, e5, f5, g5, h5,
+  a6, b6, c6, d6, e6, f6, g6, h6,
+  a7, b7, c7, d7, e7, f7, g7, h7,
+  a8, b8, c8, d8, e8, f8, g8, h8
+};
+
+
 void Chessboard::drawGameState() {
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); // Imposta la modalità di blending
@@ -298,16 +310,21 @@ int Chessboard::getPieceAt(int file, int rank) const {
     return Piece::None;
 }
 
-void Chessboard::printBitboards() const {
-    for (const auto& pair : bitboard.bitboards) {
-        std::cout << "Piece: " << pair.first << " Bitboard: 0x" 
-                  << std::hex << std::setfill('0') << std::setw(16) << *pair.second 
-                  << std::dec << std::endl;
+void Chessboard::printBitboards(uint64_t bitboard) const {
+    for (int rank = 7; rank >= 0; --rank) {
+        for (int file = 0; file < 8; ++file) {
+            int square = rank * 8 + file; // Calcola la posizione del bit
+            std::cout << ((bitboard & (1ULL << square)) ? "1 " : ". ");
+        }
+        std::cout << std::endl;
     }
+    std::cout << std::endl;
+
+    std::cout << "Bitboard: " << bitboard << "\n" << std::endl;
 }
 
 
-std::vector<Move> Chessboard::generatePseudoLegalMoves() {
+std::vector<Move> Chessboard::generatePseudoLegalMoves() {      //  >> SINISTRA (diminuisce, basso) || << DESTRA (aumenta, alto)
     
     moves.clear();
 
@@ -322,8 +339,8 @@ std::vector<Move> Chessboard::generatePseudoLegalMoves() {
             if (Piece::isColor(piece, sideToMove)) {
                 if (Piece::isSlidingPiece(piece)) {
                     // Generate sliding piece moves
-                    generateSlidingMoves(startSquare, piece);
-                    // getPawnMoves(startSquare, piece);
+                    // generateSlidingMoves(startSquare, piece);
+                    getPawnMoves(startSquare, piece);
                 } else {
                     // generateLeapingMoves(startSquare, piece);
                 }
@@ -387,38 +404,43 @@ void Chessboard::generateSlidingMoves(int startSquare, int piece) {
 
 void Chessboard::getPawnMoves(int square, int piece) {
 
-    uint64_t attacks = maskKnightAttacks(square);
+    printBitboards((uint64_t)getRandomU32Number());
+    printBitboards((uint64_t)getRandomU32Number() & 0xFFFF);
+    printBitboards(getRandomU64Number());
+    printBitboards(generateMagicNumber());
 
-    for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
-        if (attacks & (1ULL << targetSquare)) {
-            moves.push_back(Move(square % 8, square / 8, targetSquare % 8, targetSquare / 8, piece));
-        }
-    }
+    // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
+    //     if (attacks & (1ULL << targetSquare)) {
+    //         moves.push_back(Move(square % 8, square / 8, targetSquare % 8, targetSquare / 8, piece));
+    //     }
+    // }
 }
 
+// Mask Pawn Attacks
 uint64_t Chessboard::maskPawnAttacks(int square, bool isWhite) const {
     uint64_t attacks = 0;
     uint64_t pos = 1ULL << square;
 
     if (isWhite) {
         if (square % 8 != 0) {
-            attacks |= pos >> 7;
+            attacks |= pos << 7;
         }
         if (square % 8 != 7) {
-            attacks |= pos >> 9;
+            attacks |= pos << 9;
         }
     } else {
         if (square % 8 != 0) {
-            attacks |= pos << 9;
+            attacks |= pos >> 9;
         }
         if (square % 8 != 7) {
-            attacks |= pos << 7;
+            attacks |= pos >> 7;
         }
     }
 
     return attacks;
 }
 
+// Mask Knight Attacks
 uint64_t Chessboard::maskKnightAttacks(int square) const {
     uint64_t attacks = 0;
     uint64_t pos = 1ULL << square;
@@ -459,6 +481,188 @@ uint64_t Chessboard::maskKnightAttacks(int square) const {
     return attacks;
 }
 
+// Mask King Attacks
+uint64_t Chessboard::maskKingAttacks(int square) const {
+    uint64_t attacks = 0;
+    uint64_t pos = 1ULL << square;
+
+    if(square % 8 > 0) {
+        attacks |= pos >> 1; // Sinistra
+        attacks |= pos >> 9; // Sinistra basso
+        attacks |= pos << 7; // Sinistra alto
+    }
+    if(square % 8 < 7) {
+        attacks |= pos << 1; // Destra
+        attacks |= pos << 9; // Destra basso
+        attacks |= pos >> 7; // Destra alto
+    }
+    attacks |= pos >> 8; // Basso
+    attacks |= pos << 8; // Alto
+
+    return attacks;
+}
+
+// Mask Bishop Attacks (Bishop Relevant Occupancy Bits)
+uint64_t Chessboard::maskBishopAttacks(int square) const {
+    uint64_t attacks = 0;
+
+    int rank, file;
+    int targetRank = square / 8;
+    int targetFile = square % 8;
+
+    for (rank = targetRank + 1, file = targetFile + 1; rank <= 6 && file <= 6; rank++, file++) {
+        attacks |= 1ULL << (rank * 8 + file);
+    }
+    
+    for (rank = targetRank - 1, file = targetFile + 1; rank >= 1 && file <= 6; rank--, file++) {
+        attacks |= 1ULL << (rank * 8 + file);
+    }
+
+    for (rank = targetRank + 1, file = targetFile - 1; rank <= 6 && file >= 1; rank++, file--) {
+        attacks |= 1ULL << (rank * 8 + file);
+    }
+
+    for (rank = targetRank - 1, file = targetFile - 1; rank >= 1 && file >= 1; rank--, file--) {
+        attacks |= 1ULL << (rank * 8 + file);
+    }
+
+    return attacks;
+}
+
+// Mask Rook Attacks (Rook Relevant Occupancy Bits)
+uint64_t Chessboard::maskRookAttacks(int square) const {
+    uint64_t attacks = 0;
+
+    int rank, file;
+    int targetRank = square / 8;
+    int targetFile = square % 8;
+
+    for (rank = targetRank + 1; rank <= 6; rank++) {
+        attacks |= 1ULL << (rank * 8 + targetFile);
+    }
+
+    for (rank = targetRank - 1; rank >= 1; rank--) {
+        attacks |= 1ULL << (rank * 8 + targetFile);
+    }
+
+    for (file = targetFile + 1; file <= 6; file++) {
+        attacks |= 1ULL << (targetRank * 8 + file);
+    }
+
+    for (file = targetFile - 1; file >= 1; file--) {
+        attacks |= 1ULL << (targetRank * 8 + file);
+    }
+
+    return attacks;
+}
+
+// Generate Bishop Attacks on the fly
+uint64_t Chessboard::bishopAttackOnTheFly(int square, uint64_t block) const {
+    uint64_t attacks = 0;
+
+    int rank, file;
+    int targetRank = square / 8;
+    int targetFile = square % 8;
+
+    for (rank = targetRank + 1, file = targetFile + 1; rank <= 7 && file <= 7; rank++, file++) {
+        attacks |= 1ULL << (rank * 8 + file);
+        if (block & (1ULL << (rank * 8 + file))) break;
+    }
+    
+    for (rank = targetRank - 1, file = targetFile + 1; rank >= 0 && file <= 7; rank--, file++) {
+        attacks |= 1ULL << (rank * 8 + file);
+        if (block & (1ULL << (rank * 8 + file))) break;
+    }
+
+    for (rank = targetRank + 1, file = targetFile - 1; rank <= 7 && file >= 0; rank++, file--) {
+        attacks |= 1ULL << (rank * 8 + file);
+        if (block & (1ULL << (rank * 8 + file))) break;
+    }
+
+    for (rank = targetRank - 1, file = targetFile - 1; rank >= 0 && file >= 0; rank--, file--) {
+        attacks |= 1ULL << (rank * 8 + file);
+        if (block & (1ULL << (rank * 8 + file))) break;
+    }
+
+    return attacks;
+}
+
+// Generate Rook Attacks on the fly
+uint64_t Chessboard::rookAttacksOnTheFly(int square, uint64_t block) const {
+    uint64_t attacks = 0;
+
+    int rank, file;
+    int targetRank = square / 8;
+    int targetFile = square % 8;
+
+    for (rank = targetRank + 1; rank <= 7; rank++) {
+        attacks |= 1ULL << (rank * 8 + targetFile);
+        if (block & (1ULL << (rank * 8 + targetFile))) break;
+    }
+
+    for (rank = targetRank - 1; rank >= 0; rank--) {
+        attacks |= 1ULL << (rank * 8 + targetFile);
+        if (block & (1ULL << (rank * 8 + targetFile))) break;
+    }
+
+    for (file = targetFile + 1; file <= 7; file++) {
+        attacks |= 1ULL << (targetRank * 8 + file);
+        if (block & (1ULL << (targetRank * 8 + file))) break;
+    }
+
+    for (file = targetFile - 1; file >= 0; file--) {
+        attacks |= 1ULL << (targetRank * 8 + file);
+        if (block & (1ULL << (targetRank * 8 + file))) break; 
+    }
+
+    return attacks;
+}
+
+// Set occupancies
+uint64_t Chessboard::setOccupancy(int index, int bitsInMask, uint64_t attackMask) const {
+    uint64_t occupancy = 0ULL;
+
+    for (int count = 0; count < bitsInMask; count++) {
+        int square = getLSBIndex(attackMask);
+        CLEAR_BIT(attackMask, square);
+        if (index & (1 << count)) {
+            occupancy |= (1ULL << square);
+        }
+    }
+
+    return occupancy;
+}
+
+// Generate 32-bit pseudo-legal numbers
+unsigned int Chessboard::getRandomU32Number() const {
+    unsigned int number = state;
+
+    // Xorshift algorithm
+    number ^= number << 13;
+    number ^= number >> 17;
+    number ^= number << 5;
+
+    state = number;
+
+    return number;
+}
+
+// Generate 64-bit pseudo-legal numbers
+uint64_t Chessboard::getRandomU64Number() const {
+    uint64_t number1, number2, number3, number4;
+
+    number1 = (uint64_t)(getRandomU32Number() & 0xFFFF);
+    number2 = (uint64_t)(getRandomU32Number() & 0xFFFF);
+    number3 = (uint64_t)(getRandomU32Number() & 0xFFFF);
+    number4 = (uint64_t)(getRandomU32Number() & 0xFFFF);
+
+    return number1 | (number2 << 16) | (number3 << 32) | (number4 << 48);
+}
+
+// Generate magic number candidate
+uint64_t Chessboard::generateMagicNumber() const {
+    return getRandomU64Number() & getRandomU64Number() & getRandomU64Number();
+}
 
 void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRank, int piece) {
     std::cout << "\nMoving piece: " << piece << " from (" << startFile << ", " << startRank << ") to (" << endFile << ", " << endRank << ")" << std::endl;
@@ -486,7 +690,7 @@ void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRan
         *bitboard.bitboards[piece] |= (1ULL << endPosition);    // Posiziona il pezzo
 
         //cambia il turno tra 0 e 8
-        sideToMove ^= 8;
+        // sideToMove ^= 8;
         std::cout << "Piece moved successfully!" << std::endl;
         std::cout << "White to move: " << sideToMove << std::endl;
     }

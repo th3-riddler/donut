@@ -127,13 +127,24 @@ class Chessboard {
         int getPieceAt(int file, int rank) const;
         void movePiece(int fromFile, int fromRank, int toFile, int toRank, int piece);
 
-        void printBitboards() const;
+        void printBitboards(uint64_t bitboard) const;
 
         int sideToMove = 0; // 0 = white, 8 = black
     private:
         SDL_Renderer* renderer;
         const int squareSize = 100;
         const int boardSize = 8;
+
+        const char *squareToCoordinates[64] = {
+            "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+            "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+            "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+            "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+            "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+            "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+            "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+            "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
+        };
 
         std::unordered_map<char, SDL_Texture*> pieceTextures; // Maps piece characters to textures
 
@@ -153,6 +164,35 @@ class Chessboard {
 
         uint64_t maskPawnAttacks(int square, bool isWhite) const;
         uint64_t maskKnightAttacks(int square) const;
+        uint64_t maskKingAttacks(int square) const;
+        uint64_t maskBishopAttacks(int square) const;
+        uint64_t maskRookAttacks(int square) const;
+
+        uint64_t bishopAttackOnTheFly(int square, uint64_t block) const;
+        uint64_t rookAttacksOnTheFly(int square, uint64_t block) const;
+
+        uint64_t setOccupancy(int index, int bitsInMask, uint64_t attackMask) const;
+        unsigned int getRandomU32Number() const;
+        uint64_t getRandomU64Number() const;
+        uint64_t generateMagicNumber() const;
+
+
+        // Count bits within a bitboard
+        static inline int countBits(uint64_t bitboard) {
+            int count = 0;
+            while (bitboard) {
+                count++;
+                bitboard &= bitboard - 1;
+            }
+            return count;
+        }
+
+        static inline int getLSBIndex(uint64_t bitboard) {
+            if (bitboard)
+                return countBits((bitboard & -bitboard) - 1);
+            else
+                return -1;
+        }
 
         // Drag-and-drop related members
         bool dragging = false;
@@ -163,6 +203,32 @@ class Chessboard {
         int draggedPieceY = -1;
         int mouseX = -1;
         int mouseY = -1;
+
+        
+        // pseudo random number state
+        mutable unsigned int state = 1804289383;
+
+        const int bishopRelevantBits[64] = {
+            6, 5, 5, 5, 5, 5, 5, 6, 
+            5, 5, 5, 5, 5, 5, 5, 5, 
+            5, 5, 7, 7, 7, 7, 5, 5, 
+            5, 5, 7, 9, 9, 7, 5, 5, 
+            5, 5, 7, 9, 9, 7, 5, 5, 
+            5, 5, 7, 7, 7, 7, 5, 5, 
+            5, 5, 5, 5, 5, 5, 5, 5, 
+            6, 5, 5, 5, 5, 5, 5, 6
+        };
+
+        const int rookRelevantBits[64] = {
+            12, 11, 11, 11, 11, 11, 11, 12, 
+            11, 10, 10, 10, 10, 10, 10, 11, 
+            11, 10, 10, 10, 10, 10, 10, 11, 
+            11, 10, 10, 10, 10, 10, 10, 11, 
+            11, 10, 10, 10, 10, 10, 10, 11, 
+            11, 10, 10, 10, 10, 10, 10, 11, 
+            11, 10, 10, 10, 10, 10, 10, 11, 
+            12, 11, 11, 11, 11, 11, 11, 12
+        };
 };
 
 #endif // CHESSBOARD_HPP

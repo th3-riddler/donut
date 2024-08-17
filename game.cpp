@@ -11,7 +11,7 @@ Game::Game()
 void Game::run() {
     // std::cout << "Game::run: chessboard address = " << &chessboard << std::endl;
     // chessboard.initializeFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    chessboard.initializeFromFEN("rnbqkbnr/ppppp2p/5p2/6P1/8/8/PPPPPPP1/RNBQKBNR w KQkq - 0 3");
+    chessboard.initializeFromFEN("8/8/8/8/3R4/8/8/8 w - - 0 1");
     preComputedMoveData::initialize();
     chessboard.generatePseudoLegalMoves();
     while (window.isOpen()) {
