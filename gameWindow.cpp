@@ -42,12 +42,12 @@ bool GameWindow::isOpen() const {
     return open;
 }
 
-void GameWindow::handleEvents() {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT) {
-            open = false;
-        }
-        chessboard->handleEvent(event);
-    }   
-}
+// void GameWindow::handleEvents() {
+//     SDL_Event event;
+//     while (SDL_PollEvent(&event)) {
+//         if (event.type == SDL_QUIT) {
+//             open = false;
+//         }
+//         chessboard->handleEvent(event);
+//     }   
+// }

@@ -5,107 +5,11 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <cstdint>
+
 #include "move.hpp"
 #include "piece.hpp"
-
-
-struct BitBoard {
-    uint64_t whitePawns = 0;
-    uint64_t whiteKnights = 0;
-    uint64_t whiteBishops = 0;
-    uint64_t whiteRooks = 0;
-    uint64_t whiteQueens = 0;
-    uint64_t whiteKing = 0;
-
-    uint64_t blackPawns = 0;
-    uint64_t blackKnights = 0;
-    uint64_t blackBishops = 0;
-    uint64_t blackRooks = 0;
-    uint64_t blackQueens = 0;
-    uint64_t blackKing = 0;
-
-    // Unordered map che contiene puntatori a tutte le bitboard
-    std::unordered_map<int, uint64_t*> bitboards = {
-        {Piece::WhitePawn, &whitePawns},
-        {Piece::WhiteKnight, &whiteKnights},
-        {Piece::WhiteBishop, &whiteBishops},
-        {Piece::WhiteRook, &whiteRooks},
-        {Piece::WhiteQueen, &whiteQueens},
-        {Piece::WhiteKing, &whiteKing},
-        {Piece::BlackPawn, &blackPawns},
-        {Piece::BlackKnight, &blackKnights},
-        {Piece::BlackBishop, &blackBishops},
-        {Piece::BlackRook, &blackRooks},
-        {Piece::BlackQueen, &blackQueens},
-        {Piece::BlackKing, &blackKing}
-    };
-
-    uint64_t whitePieces() const {
-        return whitePawns | whiteKnights | whiteBishops | whiteRooks | whiteQueens | whiteKing;
-    }
-
-    uint64_t blackPieces() const {
-        return blackPawns | blackKnights | blackBishops | blackRooks | blackQueens | blackKing;
-    }
-
-    uint64_t allPieces() const {
-        return whitePieces() | blackPieces();
-    }
-
-    uint64_t emptySquares() const {
-        return ~allPieces();
-    }
-
-    uint64_t whiteKingCastle;
-    uint64_t whiteQueenCastle;
-    uint64_t blackKingCastle;
-    uint64_t blackQueenCastle;
-
-    uint64_t enPassantSquare;
-
-    uint64_t halfMoveClock;
-    uint64_t fullMoveCounter;
-
-    uint64_t getPiece(int piece) const {
-        if (piece == Piece::WhitePawn) {
-            return whitePawns;
-        } else if (piece == Piece::WhiteKnight) {
-            return whiteKnights;
-        } else if (piece == Piece::WhiteBishop) {
-            return whiteBishops;
-        } else if (piece == Piece::WhiteRook) {
-            return whiteRooks;
-        } else if (piece == Piece::WhiteQueen) {
-            return whiteQueens;
-        } else if (piece == Piece::WhiteKing) {
-            return whiteKing;
-        } else if (piece == Piece::BlackPawn) {
-            return blackPawns;
-        } else if (piece == Piece::BlackKnight) {
-            return blackKnights;
-        } else if (piece == Piece::BlackBishop) {
-            return blackBishops;
-        } else if (piece == Piece::BlackRook) {
-            return blackRooks;
-        } else if (piece == Piece::BlackQueen) {
-            return blackQueens;
-        } else if (piece == Piece::BlackKing) {
-            return blackKing;
-        } else {
-            return 0;
-        }
-    }
-
-    void setPiece(int piece, uint64_t value) {
-        if (piece == Piece::WhitePawn) {
-            whitePawns = value;
-        } else if (piece == Piece::WhiteKnight) {
-            whiteKnights = value;
-        } else if (piece == Piece::WhiteBishop) {
-            whiteBishops = value;
-        }
-    }
-};
+#include "bitboard.hpp"
 
 class Chessboard {
     public:
@@ -114,13 +18,12 @@ class Chessboard {
 
         void drawGameState();
         void handleEvent(const SDL_Event& e);
-
+        void parseFEN(const char *fen);
 
         std::vector<Move> moves;
 
         std::vector<Move> generateMoves();
         std::vector<Move> generatePseudoLegalMoves();
-        void initializeFromFEN(const std::string& fen);
 
         BitBoard bitboard;
 
@@ -129,11 +32,27 @@ class Chessboard {
 
         void printBitboards(uint64_t bitboard) const;
 
-        int sideToMove = 0; // 0 = white, 8 = black
+        enum enumSquare {
+            a1, b1, c1, d1, e1, f1, g1, h1,
+            a2, b2, c2, d2, e2, f2, g2, h2,
+            a3, b3, c3, d3, e3, f3, g3, h3,
+            a4, b4, c4, d4, e4, f4, g4, h4,
+            a5, b5, c5, d5, e5, f5, g5, h5,
+            a6, b6, c6, d6, e6, f6, g6, h6,
+            a7, b7, c7, d7, e7, f7, g7, h7,
+            a8, b8, c8, d8, e8, f8, g8, h8, noSquare
+        };
+
+        void getPawnMoves();
+
     private:
         SDL_Renderer* renderer;
         const int squareSize = 100;
         const int boardSize = 8;
+
+        enum { white, black, both };
+        enum { wk = 1, wq = 2, bk = 4, bq = 8 };
+        enum { P, N, B, R, Q, K, p, n, b, r, q, k };
         enum { rook, bishop };
 
         uint64_t bishopMasks[64];
@@ -153,9 +72,32 @@ class Chessboard {
             "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
         };
 
+        char asciiPieces[13] = "PNBRQKpnbrqk";
+        const char *unicodePieces[13] = {
+            "♙", "♘", "♗", "♖", "♕", "♔",
+            "♟", "♞", "♝", "♜", "♛", "♚"
+        };
+        // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
+
+        int charPieces[128]; // Inizializza tutto a 0
+        void initializeCharPieces() {
+            charPieces['P'] = P;
+            charPieces['N'] = N;
+            charPieces['B'] = B;
+            charPieces['R'] = R;
+            charPieces['Q'] = Q;
+            charPieces['K'] = K;
+            charPieces['p'] = p;
+            charPieces['n'] = n;
+            charPieces['b'] = b;
+            charPieces['r'] = r;
+            charPieces['q'] = q;
+            charPieces['k'] = k;
+        }
+        
+
         std::unordered_map<char, SDL_Texture*> pieceTextures; // Maps piece characters to textures
 
-        void parseFEN(const std::string& fen);
         void loadPieceTextures();
 
         void draw();
@@ -164,10 +106,11 @@ class Chessboard {
         void generateSlidingMoves(int startSquare, int piece);
         void generateLeapingMoves(int startSquare, int piece);
 
+        void printBoard() const;
+
         void colorSquare();
         bool isInValidMoveList(int file, int rank, int piece);
         
-        void getPawnMoves(int square, int piece);
 
         uint64_t maskPawnAttacks(int square, bool isWhite) const;
         uint64_t maskKnightAttacks(int square) const;
@@ -380,5 +323,6 @@ class Chessboard {
             0x4010011029020020ULL
         };
 };
+
 
 #endif // CHESSBOARD_HPP
