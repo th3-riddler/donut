@@ -404,10 +404,7 @@ void Chessboard::generateSlidingMoves(int startSquare, int piece) {
 
 void Chessboard::getPawnMoves(int square, int piece) {
 
-    printBitboards((uint64_t)getRandomU32Number());
-    printBitboards((uint64_t)getRandomU32Number() & 0xFFFF);
-    printBitboards(getRandomU64Number());
-    printBitboards(generateMagicNumber());
+
 
     // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
     //     if (attacks & (1ULL << targetSquare)) {
@@ -635,14 +632,14 @@ uint64_t Chessboard::setOccupancy(int index, int bitsInMask, uint64_t attackMask
 
 // Generate 32-bit pseudo-legal numbers
 unsigned int Chessboard::getRandomU32Number() const {
-    unsigned int number = state;
+    unsigned int number = randomState;
 
     // Xorshift algorithm
     number ^= number << 13;
     number ^= number >> 17;
     number ^= number << 5;
 
-    state = number;
+    randomState = number;
 
     return number;
 }
@@ -651,10 +648,10 @@ unsigned int Chessboard::getRandomU32Number() const {
 uint64_t Chessboard::getRandomU64Number() const {
     uint64_t number1, number2, number3, number4;
 
-    number1 = (uint64_t)(getRandomU32Number() & 0xFFFF);
-    number2 = (uint64_t)(getRandomU32Number() & 0xFFFF);
-    number3 = (uint64_t)(getRandomU32Number() & 0xFFFF);
-    number4 = (uint64_t)(getRandomU32Number() & 0xFFFF);
+    number1 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
+    number2 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
+    number3 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
+    number4 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
 
     return number1 | (number2 << 16) | (number3 << 32) | (number4 << 48);
 }
@@ -663,6 +660,62 @@ uint64_t Chessboard::getRandomU64Number() const {
 uint64_t Chessboard::generateMagicNumber() const {
     return getRandomU64Number() & getRandomU64Number() & getRandomU64Number();
 }
+
+// Find appropriate magic number
+uint64_t Chessboard::findMagicNumber(int square, int relevantBits, int bishop) const {
+    uint64_t occupancies[4096];
+    uint64_t attacks[4096];
+
+    uint64_t usedAttacks[4096];
+    uint64_t attackMask = bishop ? maskBishopAttacks(square) : maskRookAttacks(square);
+
+    int occupancyIndices = 1 << relevantBits;
+
+    for (int index = 0; index < occupancyIndices; index++) {
+        occupancies[index] = setOccupancy(index, relevantBits, attackMask);
+        attacks[index] = bishop ? bishopAttackOnTheFly(square, occupancies[index]) : rookAttacksOnTheFly(square, occupancies[index]);
+    }
+
+    // Test Magic Numbers
+    for (int randomCount = 0; randomCount < 100000000; randomCount++) {
+        // Generate Magic Number Candidate
+        uint64_t magicNumber = generateMagicNumber();
+
+        // Skip inappropriate Magic Numbers
+        if(countBits((attackMask * magicNumber) & 0xFF00000000000000) < 6) continue;
+
+        // Initialize used attacks
+        memset(usedAttacks, 0ULL, sizeof(usedAttacks));
+
+        int index, fail;
+        
+        // Check if the magic number is appropriate
+        for (index = 0, fail = 0; !fail && index < occupancyIndices; index++) {
+            int magicIndex = (int)((occupancies[index] * magicNumber) >> (64 - relevantBits));
+
+            if (usedAttacks[magicIndex] == 0ULL) {
+                usedAttacks[magicIndex] = attacks[index];
+            } else if (usedAttacks[magicIndex] != attacks[index]) {
+                fail = 1;
+            }
+        }
+        if (!fail)
+            return magicNumber;
+    }
+    std::cout << "Magic Number not found!" << std::endl;
+    return 0ULL;
+}
+
+// void Chessboard::initMagicNumbers() {
+//     for (int square = 0; square < 64; square++) {
+//         std::cout << "0x" << std::hex << findMagicNumber(square, rookRelevantBits[square], rook) << "ULL, " << std::endl;
+//     }
+//     std::cout << std::endl;
+//     for (int square = 0; square < 64; square++) {
+//         std::cout << "0x" << std::hex << findMagicNumber(square, bishopRelevantBits[square], bishop) << "ULL, " << std::endl;
+//     }
+// }
+
 
 void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRank, int piece) {
     std::cout << "\nMoving piece: " << piece << " from (" << startFile << ", " << startRank << ") to (" << endFile << ", " << endRank << ")" << std::endl;
