@@ -158,7 +158,7 @@ void Chessboard::parseFEN(const char *fen) {
                 
                 SET_BIT(bitboard.bitboards[piece], square);
 
-                *fen++;
+                fen++;
             }
 
             if (*fen >= '0' && *fen <= '9') {
@@ -176,16 +176,16 @@ void Chessboard::parseFEN(const char *fen) {
                     file--;
 
                 file += offset;
-                *fen++;
+                fen++;
             }
 
             if (*fen == '/') {
-                *fen++;
+                fen++;
             }
         }
     }
     // Parse side to move
-    *fen++;
+    fen++;
     bitboard.sideToMove = (*fen == 'w') ? white : black;
 
     // Parse castling rights
@@ -198,11 +198,11 @@ void Chessboard::parseFEN(const char *fen) {
             case 'q': bitboard.castlingRights |= bq; break;
             case '-': break;
         }
-        *fen++;
+        fen++;
     }
 
     // Parse en passant square
-    *fen++;
+    fen++;
 
     if (*fen != '-') {
         int file = fen[0] - 'a';
@@ -329,11 +329,15 @@ void Chessboard::printBitboards(uint64_t bitboard) const {
     for (int rank = 7; rank >= 0; --rank) {
         for (int file = 0; file < 8; ++file) {
             int square = rank * 8 + file; // Calcola la posizione del bit
+
+            if (!file)
+                std::cout << "  " << 8 - rank << "  ";
+                
             std::cout << ((bitboard & (1ULL << square)) ? "1 " : ". ");
         }
         std::cout << std::endl;
     }
-    std::cout << std::endl;
+    std::cout << "\n     a b c d e f g h\n" << std::endl;
 
     std::cout << "Bitboard: " << bitboard << "\n" << std::endl;
 }
@@ -458,10 +462,10 @@ void Chessboard::getPawnMoves() {
 
     initAll();
 
-    uint64_t occupancy = 0ULL;
-    SET_BIT(occupancy, d5);
+    parseFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+    printBoard();
 
-    printBitboards(getRookAttacks(d4, occupancy));
+    generateMoves();
 
     // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
     //     if (attacks & (1ULL << targetSquare)) {
@@ -470,12 +474,252 @@ void Chessboard::getPawnMoves() {
     // }
 }
 
+// Generate all moves
+inline void Chessboard::generateMoves() {
+    int sourceSquare, targetSquare;
+
+    uint64_t bitboardCopy, attacks;
+
+    for (int piece = P; piece <= k; piece++) {
+        bitboardCopy = bitboard.bitboards[piece];
+
+        // Generate White Pawn Moves and White King Castling Moves
+        if (bitboard.sideToMove == white) {
+            if (piece == P) {
+                while (bitboardCopy) {
+                    sourceSquare = getLSBIndex(bitboardCopy);
+                    targetSquare = sourceSquare + 8;
+
+                    // Generate Quite Pawn Moves
+                    if (!(targetSquare > h8) && !GET_BIT(bitboard.occupancies[both], targetSquare)) {
+                        // Pawn Promotion
+                        if (sourceSquare >= a7 && sourceSquare <= h7) {
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                        }
+                        else {
+                            // One square pawn advance
+                            std::cout << "Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+
+                            // Double square pawn advance
+                            if ((sourceSquare >= a2 && sourceSquare <= h2) && !GET_BIT(bitboard.occupancies[both], targetSquare + 8)) {
+                                std::cout << "Double Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare + 8] << std::endl;
+                            }
+                        }
+                    }
+
+                    // Generate Capture Pawn Moves
+                    attacks = pawnAttacks[white][sourceSquare] & bitboard.occupancies[black];
+
+                    while (attacks) {
+                        targetSquare = getLSBIndex(attacks);
+
+                        // Pawn Promotion
+                        if (sourceSquare >= a7 && sourceSquare <= h7) {
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                        }
+                        else {
+                            std::cout << "Pawn Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        }
+
+                        CLEAR_BIT(attacks, targetSquare);
+                    }
+
+                    // En passant captures
+                    if (bitboard.enPassantSquare != noSquare) {
+                        uint64_t enPassantAttacks = pawnAttacks[white][sourceSquare] & (1ULL << bitboard.enPassantSquare);
+
+                        if (enPassantAttacks) {
+                            int enPassantTarget = getLSBIndex(enPassantAttacks);
+
+                            std::cout << "Pawn en Passant Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[enPassantTarget] << std::endl;
+                        }
+                    }
+
+                    // Pop LSB from bitboardCopy
+                    CLEAR_BIT(bitboardCopy, sourceSquare);
+                }
+            }
+
+            // Castling Moves
+            if (piece == K) {
+                // King Side Castling
+                if (bitboard.castlingRights & wk) {
+                    // Check if the squares between the king and rook are empty
+                    if (!GET_BIT(bitboard.occupancies[both], f1) && !GET_BIT(bitboard.occupancies[both], g1)) {
+                        // Check if the squares the king moves through are not under attack
+                        if (!isSquareAttacked(e1, black) && !isSquareAttacked(f1, black)) {
+                            std::cout << "King Side Castling: e1g1" << std::endl;
+                        }
+                    }
+                }
+
+                // Queen Side Castling
+                if (bitboard.castlingRights & wq) {
+                    // Check if the squares between the king and rook are empty
+                    if (!GET_BIT(bitboard.occupancies[both], d1) && !GET_BIT(bitboard.occupancies[both], c1) && !GET_BIT(bitboard.occupancies[both], b1)) {
+                        // Check if the squares the king moves through are not under attack
+                        if (!isSquareAttacked(e1, black) && !isSquareAttacked(d1, black)) {
+                            std::cout << "Queen Side Castling: e1c1" << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+        else { // Generate Black Pawn Moves and Black King Castling Moves
+            if (piece == p) {
+                while (bitboardCopy) {
+                    sourceSquare = getLSBIndex(bitboardCopy);
+                    targetSquare = sourceSquare - 8;
+
+                    // Generate Quite Pawn Moves
+                    if (!(targetSquare < a1) && !GET_BIT(bitboard.occupancies[both], targetSquare)) {
+                        // Pawn Promotion
+                        if (sourceSquare >= a2 && sourceSquare <= h2) {
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
+                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                        }
+                        else {
+                            // One square pawn advance
+                            std::cout << "Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+
+                            // Double square pawn advance
+                            if ((sourceSquare >= a7 && sourceSquare <= h7) && !GET_BIT(bitboard.occupancies[both], targetSquare - 8)) {
+                                std::cout << "Double Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare - 8] << std::endl;
+                            }
+                        }
+                    }
+
+                    // Generate Capture Pawn Moves
+                    attacks = pawnAttacks[black][sourceSquare] & bitboard.occupancies[white];
+
+                    while (attacks) {
+                        targetSquare = getLSBIndex(attacks);
+
+                        // Pawn Promotion
+                        if (sourceSquare >= a2 && sourceSquare <= h2) {
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
+                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                        }
+                        else {
+                            std::cout << "Pawn Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        }
+
+                        CLEAR_BIT(attacks, targetSquare);
+                    }
+
+                    // En passant captures
+                    if (bitboard.enPassantSquare != noSquare) {
+                        uint64_t enPassantAttacks = pawnAttacks[black][sourceSquare] & (1ULL << bitboard.enPassantSquare);
+
+                        if (enPassantAttacks) {
+                            int enPassantTarget = getLSBIndex(enPassantAttacks);
+
+                            std::cout << "Pawn en Passant Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[enPassantTarget] << std::endl;
+                        }
+                    }
+
+                    // Pop LSB from bitboardCopy
+                    CLEAR_BIT(bitboardCopy, sourceSquare);
+                }
+            }
+
+            // Castling Moves
+            if (piece == k) {
+                // King Side Castling
+                if (bitboard.castlingRights & bk) {
+                    // Check if the squares between the king and rook are empty
+                    if (!GET_BIT(bitboard.occupancies[both], f8) && !GET_BIT(bitboard.occupancies[both], g8)) {
+                        // Check if the squares the king moves through are not under attack
+                        if (!isSquareAttacked(e8, white) && !isSquareAttacked(f8, white)) {
+                            std::cout << "King Side Castling: e8g8" << std::endl;
+                        }
+                    }
+                }
+
+                // Queen Side Castling
+                if (bitboard.castlingRights & bq) {
+                    // Check if the squares between the king and rook are empty
+                    if (!GET_BIT(bitboard.occupancies[both], d8) && !GET_BIT(bitboard.occupancies[both], c8) && !GET_BIT(bitboard.occupancies[both], b8)) {
+                        // Check if the squares the king moves through are not under attack
+                        if (!isSquareAttacked(e8, white) && !isSquareAttacked(d8, white)) {
+                            std::cout << "Queen Side Castling: e8c8" << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Generate Knight Moves
+
+        // Generate Bishop Moves
+
+        // Generate Rook Moves
+
+        // Generate Queen Moves
+
+        // Generate King Moves
+    }
+}
+
+// Detect if the given square is under attack by the given color
+inline bool Chessboard::isSquareAttacked(int square, int side) {
+    
+    // Attacked by White Pawns
+    if ((side == white) && (pawnAttacks[black][square] & bitboard.bitboards[P])) return true; 
+
+    // Attacked by Black Pawns
+    if ((side == black) && (pawnAttacks[white][square] & bitboard.bitboards[p])) return true;
+
+    // Attacked by Knights
+    if ((knightAttacks[square] & ((side == white) ? bitboard.bitboards[N] : bitboard.bitboards[n]))) return true;
+
+    // Attacked by Kings
+    if ((kingAttacks[square] & ((side == white) ? bitboard.bitboards[K] : bitboard.bitboards[k]))) return true;
+
+    // Attacked by Bishops
+    if (getBishopAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[B] : bitboard.bitboards[b])) return true;
+
+    // Attacked by Rooks
+    if (getRookAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[R] : bitboard.bitboards[r])) return true;
+
+    // Attacked by Queens
+    if (getQueenAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[Q] : bitboard.bitboards[q])) return true;
+    
+    return false;
+}
+
+// Print attacked squares
+void Chessboard::printAttackedSquares(int side) {
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = (7 - rank) * 8 + file;
+
+            if (!file)
+                std::cout << "  " << 8 - rank << "  ";
+            
+            std::cout << (isSquareAttacked(square, side) ? "X " : ". ");
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "\n     a b c d e f g h\n" << std::endl;
+}
+
 // Mask Pawn Attacks
-uint64_t Chessboard::maskPawnAttacks(int square, bool isWhite) const {
+uint64_t Chessboard::maskPawnAttacks(int square, int color) const {
     uint64_t attacks = 0;
     uint64_t pos = 1ULL << square;
 
-    if (isWhite) {
+    if (color == white) {
         if (square % 8 != 0) {
             attacks |= pos << 7;
         }
@@ -672,6 +916,7 @@ uint64_t Chessboard::rookAttacksOnTheFly(int square, uint64_t block) const {
     return attacks;
 }
 
+// Initialize All
 void Chessboard::initAll() {
     initLeapersAttacks();
     initSlidingAttacks(bishop);
@@ -721,7 +966,6 @@ void Chessboard::initSlidingAttacks(int bishop) {
         }
     }
 }
-
 
 // Set occupancies
 uint64_t Chessboard::setOccupancy(int index, int bitsInMask, uint64_t attackMask) const {
@@ -843,6 +1087,7 @@ uint64_t Chessboard::getRookAttacks(int square, uint64_t occupancy) const {
     return rookAttacks[square][occupancy];
 }
 
+// Get Queen Attacks
 uint64_t Chessboard::getQueenAttacks(int square, uint64_t occupancy) const {
     return getBishopAttacks(square, occupancy) | getRookAttacks(square, occupancy);
 }

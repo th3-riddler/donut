@@ -22,7 +22,7 @@ class Chessboard {
 
         std::vector<Move> moves;
 
-        std::vector<Move> generateMoves();
+        inline void generateMoves();
         std::vector<Move> generatePseudoLegalMoves();
 
         BitBoard bitboard;
@@ -118,7 +118,7 @@ class Chessboard {
         void initLeapersAttacks();
         void initSlidingAttacks(int bishop);
 
-        uint64_t maskPawnAttacks(int square, bool isWhite) const;
+        uint64_t maskPawnAttacks(int square, int color) const;
         uint64_t maskKnightAttacks(int square) const;
         uint64_t maskKingAttacks(int square) const;
         uint64_t maskBishopAttacks(int square) const;
@@ -126,6 +126,9 @@ class Chessboard {
 
         uint64_t bishopAttacksOnTheFly(int square, uint64_t block) const;
         uint64_t rookAttacksOnTheFly(int square, uint64_t block) const;
+
+        inline bool isSquareAttacked(int square, int side);
+        void printAttackedSquares(int side);
 
         uint64_t setOccupancy(int index, int bitsInMask, uint64_t attackMask) const;
         unsigned int getRandomU32Number() const;

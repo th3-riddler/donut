@@ -12,7 +12,7 @@ void Game::run() {
     // std::cout << "Game::run: chessboard address = " << &chessboard << std::endl;
     // chessboard.initializeFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     //chessboard.initializeFromFEN("8/8/8/8/3R4/8/8/8 w - - 0 1");
-    preComputedMoveData::initialize();
+    // preComputedMoveData::initialize();
     chessboard.getPawnMoves();
     // while (window.isOpen()) {
     //     // std::cout << "Handling events..." << std::endl;
