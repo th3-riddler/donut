@@ -7,11 +7,52 @@
 #include <iostream>
 #include <iomanip>
 
-Chessboard::Chessboard(SDL_Renderer* renderer) : renderer(renderer) {
-    initializeCharPieces();
-    // loadPieceTextures();
+// Chessboard::Chessboard(SDL_Renderer* renderer) : renderer(renderer) {
+//     initializeCharPieces();
+//     // loadPieceTextures();
+// }
+
+char Chessboard::asciiPieces[13] = "PNBRQKpnbrqk";
+const char* Chessboard::squareToCoordinates[64] = {
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
+};
+const char* Chessboard::unicodePieces[13] = {
+    "♙", "♘", "♗", "♖", "♕", "♔",
+    "♟", "♞", "♝", "♜", "♛", "♚"
+};
+
+int Chessboard::charPieces[128] = {};
+inline void Chessboard::initCharPieces() {
+    charPieces['P'] = P;
+    charPieces['N'] = N;
+    charPieces['B'] = B;
+    charPieces['R'] = R;
+    charPieces['Q'] = Q;
+    charPieces['K'] = K;
+    charPieces['p'] = p;
+    charPieces['n'] = n;
+    charPieces['b'] = b;
+    charPieces['r'] = r;
+    charPieces['q'] = q;
+    charPieces['k'] = k;
 }
 
+BitBoard Chessboard::bitboard;
+
+void Chessboard::init() {
+
+    initCharPieces();
+
+    getPawnMoves();
+    
+}
 
 
 // void Chessboard::drawGameState() {
@@ -325,10 +366,10 @@ void Chessboard::parseFEN(const char *fen) {
 //     return Piece::None;
 // }
 
-void Chessboard::printBitboards(uint64_t bitboard) const {
-    for (int rank = 7; rank >= 0; --rank) {
-        for (int file = 0; file < 8; ++file) {
-            int square = rank * 8 + file; // Calcola la posizione del bit
+void Chessboard::printBitboards(uint64_t bitboard) {
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = (7 - rank) * 8 + file; // Calcola la posizione del bit
 
             if (!file)
                 std::cout << "  " << 8 - rank << "  ";
@@ -342,7 +383,7 @@ void Chessboard::printBitboards(uint64_t bitboard) const {
     std::cout << "Bitboard: " << bitboard << "\n" << std::endl;
 }
 
-void Chessboard::printBoard() const {
+void Chessboard::printBoard() {
     std::cout << std::endl;
     for (int rank = 0; rank < 8; rank++) {
         for (int file = 0; file < 8; file++) {
@@ -504,9 +545,17 @@ void Chessboard::getPawnMoves() {
     moves moveList[1];
     moveList->count = 0;
 
+
     Move::addMove(moveList, encodeMove(d7, e8, P, Q, 1, 0, 0, 0));
 
+
     printMoveList(moveList);
+
+    // uint64_t occupancy = 0ULL;
+    // SET_BIT(occupancy, d7);
+    // SET_BIT(occupancy, c4);
+
+    // printBitboards(Move::getQueenAttacks(d5, occupancy));
 
     // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
     //     if (attacks & (1ULL << targetSquare)) {

@@ -2,6 +2,8 @@
 #define MOVE_HPP
 
 #include "chessboard.hpp" // Include the header file where Chessboard is defined
+#include "macros.hpp"
+#include <iostream>
 
 class Chessboard;
 
@@ -18,7 +20,9 @@ class Move {
         static uint64_t getRookAttacks(int square, uint64_t occupancy);
         static uint64_t getQueenAttacks(int square, uint64_t occupancy);
 
-        void initMagicNumbers();
+        static void initMagicNumbers();
+
+        static void init();
 
         static uint64_t bishopMasks[64];
         static uint64_t rookMasks[64];

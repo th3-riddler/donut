@@ -3,7 +3,15 @@
 
 #include <iostream>
 
-Move::Move() {
+// Move::Move() {
+//     initLeapersAttacks();
+//     initSlidingAttacks(Chessboard::bishop);
+//     initSlidingAttacks(Chessboard::rook);
+//     // initMagicNumbers();
+//     initPromotedPieces();
+// }
+
+void Move::init() {
     initLeapersAttacks();
     initSlidingAttacks(Chessboard::bishop);
     initSlidingAttacks(Chessboard::rook);
