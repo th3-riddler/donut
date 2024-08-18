@@ -1,17 +1,17 @@
 #include "chessboard.hpp"
 #include "gameWindow.hpp"
 #include "macros.hpp"
-#include "preComputedMoveData.hpp"
 
 #include <SDL2/SDL_image.h>
 #include <sstream>
 #include <iostream>
-#include<iomanip>
+#include <iomanip>
 
 Chessboard::Chessboard(SDL_Renderer* renderer) : renderer(renderer) {
     initializeCharPieces();
     // loadPieceTextures();
 }
+
 
 
 // void Chessboard::drawGameState() {
@@ -32,76 +32,76 @@ Chessboard::Chessboard(SDL_Renderer* renderer) : renderer(renderer) {
 //     }
 // }
 
-void Chessboard::colorSquare() {
-    // Imposta il colore per le caselle evidenziate
-    SDL_SetRenderDrawColor(renderer, 248, 52, 52, 150); // Usa un'opacità fissa
+// void Chessboard::colorSquare() {
+//     // Imposta il colore per le caselle evidenziate
+//     SDL_SetRenderDrawColor(renderer, 248, 52, 52, 150); // Usa un'opacità fissa
 
-    // Disegna tutte le caselle evidenziate in un batch
-    SDL_Rect dstRect = {0, 0, squareSize, squareSize};
-    for (const auto& move : moves) {
-        if (move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY) {
-            dstRect.x = move.toFile * squareSize;
-            dstRect.y = (7 - move.toRank) * squareSize;
-            SDL_RenderFillRect(renderer, &dstRect);
-        }
-    }
-}
+//     // Disegna tutte le caselle evidenziate in un batch
+//     SDL_Rect dstRect = {0, 0, squareSize, squareSize};
+//     for (const auto& move : moves) {
+//         if (move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY) {
+//             dstRect.x = move.toFile * squareSize;
+//             dstRect.y = (7 - move.toRank) * squareSize;
+//             SDL_RenderFillRect(renderer, &dstRect);
+//         }
+//     }
+// }
 
-void Chessboard::drawDraggedPiece(int pieceToDraw) {
-    if (dragging && pieceToDraw != Piece::None) {
+// void Chessboard::drawDraggedPiece(int pieceToDraw) {
+//     if (dragging && pieceToDraw != Piece::None) {
         
-        // std::cout << "Texture to draw: " << pieceTextures[Piece::getSymbol(pieceToDraw)] << std::endl;
-        int mouseX, mouseY;
-        SDL_GetMouseState(&mouseX, &mouseY);
-        SDL_Rect dstRect = { mouseX - (squareSize / 2), mouseY - (squareSize / 2), squareSize, squareSize }; // Centra il pezzo sulla posizione del mouse
+//         // std::cout << "Texture to draw: " << pieceTextures[Piece::getSymbol(pieceToDraw)] << std::endl;
+//         int mouseX, mouseY;
+//         SDL_GetMouseState(&mouseX, &mouseY);
+//         SDL_Rect dstRect = { mouseX - (squareSize / 2), mouseY - (squareSize / 2), squareSize, squareSize }; // Centra il pezzo sulla posizione del mouse
 
-        SDL_RenderCopy(renderer, pieceTextures[Piece::getSymbol(pieceToDraw)], nullptr, &dstRect); // Disegna il pezzo trascinato alla posizione del mouse
-    }
-}
+//         SDL_RenderCopy(renderer, pieceTextures[Piece::getSymbol(pieceToDraw)], nullptr, &dstRect); // Disegna il pezzo trascinato alla posizione del mouse
+//     }
+// }
 
-void Chessboard::draw() {
-    // std::cout << "Chessboard::draw: chessboard address = " << this << std::endl;
-    SDL_Rect square;
-    square.w = squareSize;
-    square.h = squareSize;
+// void Chessboard::draw() {
+//     // std::cout << "Chessboard::draw: chessboard address = " << this << std::endl;
+//     SDL_Rect square;
+//     square.w = squareSize;
+//     square.h = squareSize;
 
-    for (int row = 0; row < boardSize; ++row) {
-        for (int col = 0; col < boardSize; ++col) {
-            if ((row + col) % 2 == 0) {
-                SDL_SetRenderDrawColor(renderer, 242, 225, 195, 255); // Light
-            } else {
-                SDL_SetRenderDrawColor(renderer, 195, 160, 130, 255); // Dark
-            }
-            square.x = col * squareSize;
-            square.y = row * squareSize;
-            SDL_RenderFillRect(renderer, &square);
-        }
-    }
-}
+//     for (int row = 0; row < boardSize; ++row) {
+//         for (int col = 0; col < boardSize; ++col) {
+//             if ((row + col) % 2 == 0) {
+//                 SDL_SetRenderDrawColor(renderer, 242, 225, 195, 255); // Light
+//             } else {
+//                 SDL_SetRenderDrawColor(renderer, 195, 160, 130, 255); // Dark
+//             }
+//             square.x = col * squareSize;
+//             square.y = row * squareSize;
+//             SDL_RenderFillRect(renderer, &square);
+//         }
+//     }
+// }
 
-void Chessboard::loadPieceTextures() {
-    // std::cout << "Chessboard::loadTextures: chessboard address = " << this << std::endl;
-    std::unordered_map<char, std::string> pieceFiles = {
-        {'P', "images/wp.png"}, {'N', "images/wN.png"}, {'B', "images/wB.png"},
-        {'R', "images/wR.png"}, {'Q', "images/wQ.png"}, {'K', "images/wK.png"},
-        {'p', "images/bp.png"}, {'n', "images/bN.png"}, {'b', "images/bB.png"},
-        {'r', "images/bR.png"}, {'q', "images/bQ.png"}, {'k', "images/bK.png"}
-    };
+// void Chessboard::loadPieceTextures() {
+//     // std::cout << "Chessboard::loadTextures: chessboard address = " << this << std::endl;
+//     std::unordered_map<char, std::string> pieceFiles = {
+//         {'P', "images/wp.png"}, {'N', "images/wN.png"}, {'B', "images/wB.png"},
+//         {'R', "images/wR.png"}, {'Q', "images/wQ.png"}, {'K', "images/wK.png"},
+//         {'p', "images/bp.png"}, {'n', "images/bN.png"}, {'b', "images/bB.png"},
+//         {'r', "images/bR.png"}, {'q', "images/bQ.png"}, {'k', "images/bK.png"}
+//     };
 
-    for (const auto& pair : pieceFiles) {
-        SDL_Surface* surface = IMG_Load(pair.second.c_str());
-        if (!surface) {
-            std::cerr << "Failed to load image: " << pair.second << " SDL_image Error: " << IMG_GetError() << std::endl;
-            continue;
-        }
-        pieceTextures[pair.first] = SDL_CreateTextureFromSurface(renderer, surface);
-        SDL_FreeSurface(surface);
-    }
-    // printa le texture caricate
-    // for (const auto& pair : pieceTextures) {
-    //     std::cout << "Piece: " << pair.first << " Texture: " << pair.second << std::endl;
-    // }
-}
+//     for (const auto& pair : pieceFiles) {
+//         SDL_Surface* surface = IMG_Load(pair.second.c_str());
+//         if (!surface) {
+//             std::cerr << "Failed to load image: " << pair.second << " SDL_image Error: " << IMG_GetError() << std::endl;
+//             continue;
+//         }
+//         pieceTextures[pair.first] = SDL_CreateTextureFromSurface(renderer, surface);
+//         SDL_FreeSurface(surface);
+//     }
+//     // printa le texture caricate
+//     // for (const auto& pair : pieceTextures) {
+//     //     std::cout << "Piece: " << pair.first << " Texture: " << pair.second << std::endl;
+//     // }
+// }
 
 Chessboard::~Chessboard() {
     for (auto& pair : pieceTextures) {
@@ -298,16 +298,16 @@ void Chessboard::parseFEN(const char *fen) {
 //     }
 // }
 
-bool Chessboard::isInValidMoveList(int file, int rank, int piece) {
-    for (const auto& move : moves) {
-        if (move.piece == piece && move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY && move.toFile == file && move.toRank == rank) {
-            std::cout << "Valid move!" << std::endl;
-            return true;
-        }
-    }
-    std::cout << "Invalid move!" << std::endl;
-    return false;
-}
+// bool Chessboard::isInValidMoveList(int file, int rank, int piece) {
+//     for (const auto& move : moves) {
+//         if (move.piece == piece && move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY && move.toFile == file && move.toRank == rank) {
+//             std::cout << "Valid move!" << std::endl;
+//             return true;
+//         }
+//     }
+//     std::cout << "Invalid move!" << std::endl;
+//     return false;
+// }
 
 // int Chessboard::getPieceAt(int file, int rank) const {
 //     // printBitboards();
@@ -379,6 +379,29 @@ void Chessboard::printBoard() const {
     std::cout << std::endl;
 }
 
+// Print a Move (in UCI format)
+void Chessboard::printMove(int move) {
+    std::cout << squareToCoordinates[getMoveSource(move)] << squareToCoordinates[getMoveTarget(move)] << Move::promotedPieces[getMovePromoted(move)] << std::endl;
+}
+
+// Print Move List
+void Chessboard::printMoveList(moves *moveList) {
+
+    std::cout << "\nmove    piece    capture    doublePush    enPassant    castling\n" << std::endl;
+
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
+        int move = moveList->moves[moveCount];
+        std::cout << squareToCoordinates[getMoveSource(move)] <<
+                     squareToCoordinates[getMoveTarget(move)] << 
+                     Move::promotedPieces[getMovePromoted(move)] << "     " <<
+                     unicodePieces[getMovePiece(move)] << "         " << 
+                     (getMoveCapture(move) ? 1 : 0) << "           " << 
+                     (getMoveDoublePush(move) ? 1 : 0) << "             " << 
+                     (getMoveEnPassant(move) ? 1 : 0) << "           " << 
+                     (getMoveCastling(move) ? 1 : 0) << std::endl;
+    }
+    std::cout << "\n\n  Total moves: " << moveList->count << std::endl;
+}
 
 // std::vector<Move> Chessboard::generatePseudoLegalMoves() {      //  >> SINISTRA (diminuisce, basso) || << DESTRA (aumenta, alto)
     
@@ -458,14 +481,32 @@ void Chessboard::printBoard() const {
 //     //return moves;
 // }
 
+
+/*
+               Binary Move Bits                                         Hexidecimal Constants                          
+
+        0000 0000 0000 0000 0011 1111 --> source square                 0x3F
+        0000 0000 0000 1111 1100 0000 --> target square                 0xFC0
+        0000 0000 1111 0000 0000 0000 --> piece                         0xF000
+        0000 1111 0000 0000 0000 0000 --> promoted piece                0xF0000
+        0001 0000 0000 0000 0000 0000 --> capture flag                  0x100000
+        0010 0000 0000 0000 0000 0000 --> double pawn push flag         0x200000
+        0100 0000 0000 0000 0000 0000 --> en passant flag               0x400000
+        1000 0000 0000 0000 0000 0000 --> castling flag                 0x800000
+*/
+
+
+
 void Chessboard::getPawnMoves() {
 
-    initAll();
+    // initAll();
 
-    parseFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
-    printBoard();
+    moves moveList[1];
+    moveList->count = 0;
 
-    generateMoves();
+    Move::addMove(moveList, encodeMove(d7, e8, P, Q, 1, 0, 0, 0));
+
+    printMoveList(moveList);
 
     // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
     //     if (attacks & (1ULL << targetSquare)) {
@@ -511,7 +552,7 @@ inline void Chessboard::generateMoves() {
                     }
 
                     // Generate Capture Pawn Moves
-                    attacks = pawnAttacks[white][sourceSquare] & bitboard.occupancies[black];
+                    attacks = Move::pawnAttacks[white][sourceSquare] & bitboard.occupancies[black];
 
                     while (attacks) {
                         targetSquare = getLSBIndex(attacks);
@@ -532,7 +573,7 @@ inline void Chessboard::generateMoves() {
 
                     // En passant captures
                     if (bitboard.enPassantSquare != noSquare) {
-                        uint64_t enPassantAttacks = pawnAttacks[white][sourceSquare] & (1ULL << bitboard.enPassantSquare);
+                        uint64_t enPassantAttacks = Move::pawnAttacks[white][sourceSquare] & (1ULL << bitboard.enPassantSquare);
 
                         if (enPassantAttacks) {
                             int enPassantTarget = getLSBIndex(enPassantAttacks);
@@ -598,7 +639,7 @@ inline void Chessboard::generateMoves() {
                     }
 
                     // Generate Capture Pawn Moves
-                    attacks = pawnAttacks[black][sourceSquare] & bitboard.occupancies[white];
+                    attacks = Move::pawnAttacks[black][sourceSquare] & bitboard.occupancies[white];
 
                     while (attacks) {
                         targetSquare = getLSBIndex(attacks);
@@ -619,7 +660,7 @@ inline void Chessboard::generateMoves() {
 
                     // En passant captures
                     if (bitboard.enPassantSquare != noSquare) {
-                        uint64_t enPassantAttacks = pawnAttacks[black][sourceSquare] & (1ULL << bitboard.enPassantSquare);
+                        uint64_t enPassantAttacks = Move::pawnAttacks[black][sourceSquare] & (1ULL << bitboard.enPassantSquare);
 
                         if (enPassantAttacks) {
                             int enPassantTarget = getLSBIndex(enPassantAttacks);
@@ -660,14 +701,114 @@ inline void Chessboard::generateMoves() {
         }
 
         // Generate Knight Moves
+        if ((bitboard.sideToMove == white) ? piece == N : piece == n) {
+            while (bitboardCopy) {
+                sourceSquare = getLSBIndex(bitboardCopy);
+
+                attacks = Move::knightAttacks[sourceSquare] & ((bitboard.sideToMove == white) ? ~bitboard.occupancies[white] : ~bitboard.occupancies[black]);
+
+                while (attacks) {
+                    targetSquare = getLSBIndex(attacks);
+
+                    if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
+                        std::cout << "Knight Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                    else
+                        std::cout << "Knight Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+
+                    CLEAR_BIT(attacks, targetSquare);
+                }
+
+                CLEAR_BIT(bitboardCopy, sourceSquare);
+            }
+        }
 
         // Generate Bishop Moves
+        if ((bitboard.sideToMove == white) ? piece == B : piece == b) {
+            while (bitboardCopy) {
+                sourceSquare = getLSBIndex(bitboardCopy);
+
+                attacks = Move::getBishopAttacks(sourceSquare, bitboard.occupancies[both]) & ((bitboard.sideToMove == white) ? ~bitboard.occupancies[white] : ~bitboard.occupancies[black]);
+
+                while (attacks) {
+                    targetSquare = getLSBIndex(attacks);
+
+                    if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
+                        std::cout << "Bishop Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                    else
+                        std::cout << "Bishop Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+
+                    CLEAR_BIT(attacks, targetSquare);
+                }
+
+                CLEAR_BIT(bitboardCopy, sourceSquare);
+            }
+        }
 
         // Generate Rook Moves
+        if ((bitboard.sideToMove == white) ? piece == R : piece == r) {
+            while (bitboardCopy) {
+                sourceSquare = getLSBIndex(bitboardCopy);
+
+                attacks = Move::getRookAttacks(sourceSquare, bitboard.occupancies[both]) & ((bitboard.sideToMove == white) ? ~bitboard.occupancies[white] : ~bitboard.occupancies[black]);
+
+                while (attacks) {
+                    targetSquare = getLSBIndex(attacks);
+
+                    if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
+                        std::cout << "Rook Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                    else
+                        std::cout << "Rook Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+
+                    CLEAR_BIT(attacks, targetSquare);
+                }
+
+                CLEAR_BIT(bitboardCopy, sourceSquare);
+            }
+        }
 
         // Generate Queen Moves
+        if ((bitboard.sideToMove == white) ? piece == Q : piece == q) {
+            while (bitboardCopy) {
+                sourceSquare = getLSBIndex(bitboardCopy);
+
+                attacks = Move::getQueenAttacks(sourceSquare, bitboard.occupancies[both]) & ((bitboard.sideToMove == white) ? ~bitboard.occupancies[white] : ~bitboard.occupancies[black]);
+
+                while (attacks) {
+                    targetSquare = getLSBIndex(attacks);
+
+                    if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
+                        std::cout << "Queen Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                    else
+                        std::cout << "Queen Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+
+                    CLEAR_BIT(attacks, targetSquare);
+                }
+
+                CLEAR_BIT(bitboardCopy, sourceSquare);
+            }
+        }
 
         // Generate King Moves
+        if ((bitboard.sideToMove == white) ? piece == K : piece == k) {
+            while (bitboardCopy) {
+                sourceSquare = getLSBIndex(bitboardCopy);
+
+                attacks = Move::kingAttacks[sourceSquare] & ((bitboard.sideToMove == white) ? ~bitboard.occupancies[white] : ~bitboard.occupancies[black]);
+
+                while (attacks) {
+                    targetSquare = getLSBIndex(attacks);
+
+                    if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
+                        std::cout << "King Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                    else
+                        std::cout << "King Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+
+                    CLEAR_BIT(attacks, targetSquare);
+                }
+
+                CLEAR_BIT(bitboardCopy, sourceSquare);
+            }
+        }
     }
 }
 
@@ -675,25 +816,25 @@ inline void Chessboard::generateMoves() {
 inline bool Chessboard::isSquareAttacked(int square, int side) {
     
     // Attacked by White Pawns
-    if ((side == white) && (pawnAttacks[black][square] & bitboard.bitboards[P])) return true; 
+    if ((side == white) && (Move::pawnAttacks[black][square] & bitboard.bitboards[P])) return true; 
 
     // Attacked by Black Pawns
-    if ((side == black) && (pawnAttacks[white][square] & bitboard.bitboards[p])) return true;
+    if ((side == black) && (Move::pawnAttacks[white][square] & bitboard.bitboards[p])) return true;
 
     // Attacked by Knights
-    if ((knightAttacks[square] & ((side == white) ? bitboard.bitboards[N] : bitboard.bitboards[n]))) return true;
+    if ((Move::knightAttacks[square] & ((side == white) ? bitboard.bitboards[N] : bitboard.bitboards[n]))) return true;
 
     // Attacked by Kings
-    if ((kingAttacks[square] & ((side == white) ? bitboard.bitboards[K] : bitboard.bitboards[k]))) return true;
+    if ((Move::kingAttacks[square] & ((side == white) ? bitboard.bitboards[K] : bitboard.bitboards[k]))) return true;
 
     // Attacked by Bishops
-    if (getBishopAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[B] : bitboard.bitboards[b])) return true;
+    if (Move::getBishopAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[B] : bitboard.bitboards[b])) return true;
 
     // Attacked by Rooks
-    if (getRookAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[R] : bitboard.bitboards[r])) return true;
+    if (Move::getRookAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[R] : bitboard.bitboards[r])) return true;
 
     // Attacked by Queens
-    if (getQueenAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[Q] : bitboard.bitboards[q])) return true;
+    if (Move::getQueenAttacks(square, bitboard.occupancies[both]) & ((side == white) ? bitboard.bitboards[Q] : bitboard.bitboards[q])) return true;
     
     return false;
 }
@@ -714,383 +855,13 @@ void Chessboard::printAttackedSquares(int side) {
     std::cout << "\n     a b c d e f g h\n" << std::endl;
 }
 
-// Mask Pawn Attacks
-uint64_t Chessboard::maskPawnAttacks(int square, int color) const {
-    uint64_t attacks = 0;
-    uint64_t pos = 1ULL << square;
-
-    if (color == white) {
-        if (square % 8 != 0) {
-            attacks |= pos << 7;
-        }
-        if (square % 8 != 7) {
-            attacks |= pos << 9;
-        }
-    } else {
-        if (square % 8 != 0) {
-            attacks |= pos >> 9;
-        }
-        if (square % 8 != 7) {
-            attacks |= pos >> 7;
-        }
-    }
-
-    return attacks;
-}
-
-// Mask Knight Attacks
-uint64_t Chessboard::maskKnightAttacks(int square) const {
-    uint64_t attacks = 0;
-    uint64_t pos = 1ULL << square;
-
-    // Due file in alto, una colonna a sinistra
-    if (square % 8 > 0 && square / 8 < 6) { 
-        attacks |= pos << 15;
-    }
-    // Due file in alto, una colonna a destra
-    if (square % 8 < 7 && square / 8 < 6) {
-        attacks |= pos << 17;
-    }
-    // Due file in basso, una colonna a sinistra
-    if (square % 8 > 0 && square / 8 > 1) {
-        attacks |= pos >> 17;
-    }
-    // Due file in basso, una colonna a destra
-    if (square % 8 < 7 && square / 8 > 1) {
-        attacks |= pos >> 15;
-    }
-    // Una fila in alto, due colonne a sinistra
-    if (square % 8 > 1 && square / 8 < 7) {
-        attacks |= pos << 6;
-    }
-    // Una fila in alto, due colonne a destra
-    if (square % 8 < 6 && square / 8 < 7) {
-        attacks |= pos << 10;
-    }
-    // Una fila in basso, due colonne a sinistra
-    if (square % 8 > 1 && square / 8 > 0) {
-        attacks |= pos >> 10;
-    }
-    // Una fila in basso, due colonne a destra
-    if (square % 8 < 6 && square / 8 > 0) {
-        attacks |= pos >> 6;
-    }
-
-    return attacks;
-}
-
-// Mask King Attacks
-uint64_t Chessboard::maskKingAttacks(int square) const {
-    uint64_t attacks = 0;
-    uint64_t pos = 1ULL << square;
-
-    if(square % 8 > 0) {
-        attacks |= pos >> 1; // Sinistra
-        attacks |= pos >> 9; // Sinistra basso
-        attacks |= pos << 7; // Sinistra alto
-    }
-    if(square % 8 < 7) {
-        attacks |= pos << 1; // Destra
-        attacks |= pos << 9; // Destra basso
-        attacks |= pos >> 7; // Destra alto
-    }
-    attacks |= pos >> 8; // Basso
-    attacks |= pos << 8; // Alto
-
-    return attacks;
-}
-
-// Mask Bishop Attacks (Bishop Relevant Occupancy Bits)
-uint64_t Chessboard::maskBishopAttacks(int square) const {
-    uint64_t attacks = 0;
-
-    int rank, file;
-    int targetRank = square / 8;
-    int targetFile = square % 8;
-
-    for (rank = targetRank + 1, file = targetFile + 1; rank <= 6 && file <= 6; rank++, file++) {
-        attacks |= 1ULL << (rank * 8 + file);
-    }
-    
-    for (rank = targetRank - 1, file = targetFile + 1; rank >= 1 && file <= 6; rank--, file++) {
-        attacks |= 1ULL << (rank * 8 + file);
-    }
-
-    for (rank = targetRank + 1, file = targetFile - 1; rank <= 6 && file >= 1; rank++, file--) {
-        attacks |= 1ULL << (rank * 8 + file);
-    }
-
-    for (rank = targetRank - 1, file = targetFile - 1; rank >= 1 && file >= 1; rank--, file--) {
-        attacks |= 1ULL << (rank * 8 + file);
-    }
-
-    return attacks;
-}
-
-// Mask Rook Attacks (Rook Relevant Occupancy Bits)
-uint64_t Chessboard::maskRookAttacks(int square) const {
-    uint64_t attacks = 0;
-
-    int rank, file;
-    int targetRank = square / 8;
-    int targetFile = square % 8;
-
-    for (rank = targetRank + 1; rank <= 6; rank++) {
-        attacks |= 1ULL << (rank * 8 + targetFile);
-    }
-
-    for (rank = targetRank - 1; rank >= 1; rank--) {
-        attacks |= 1ULL << (rank * 8 + targetFile);
-    }
-
-    for (file = targetFile + 1; file <= 6; file++) {
-        attacks |= 1ULL << (targetRank * 8 + file);
-    }
-
-    for (file = targetFile - 1; file >= 1; file--) {
-        attacks |= 1ULL << (targetRank * 8 + file);
-    }
-
-    return attacks;
-}
-
-// Generate Bishop Attacks on the fly
-uint64_t Chessboard::bishopAttacksOnTheFly(int square, uint64_t block) const {
-    uint64_t attacks = 0;
-
-    int rank, file;
-    int targetRank = square / 8;
-    int targetFile = square % 8;
-
-    for (rank = targetRank + 1, file = targetFile + 1; rank <= 7 && file <= 7; rank++, file++) {
-        attacks |= 1ULL << (rank * 8 + file);
-        if (block & (1ULL << (rank * 8 + file))) break;
-    }
-    
-    for (rank = targetRank - 1, file = targetFile + 1; rank >= 0 && file <= 7; rank--, file++) {
-        attacks |= 1ULL << (rank * 8 + file);
-        if (block & (1ULL << (rank * 8 + file))) break;
-    }
-
-    for (rank = targetRank + 1, file = targetFile - 1; rank <= 7 && file >= 0; rank++, file--) {
-        attacks |= 1ULL << (rank * 8 + file);
-        if (block & (1ULL << (rank * 8 + file))) break;
-    }
-
-    for (rank = targetRank - 1, file = targetFile - 1; rank >= 0 && file >= 0; rank--, file--) {
-        attacks |= 1ULL << (rank * 8 + file);
-        if (block & (1ULL << (rank * 8 + file))) break;
-    }
-
-    return attacks;
-}
-
-// Generate Rook Attacks on the fly
-uint64_t Chessboard::rookAttacksOnTheFly(int square, uint64_t block) const {
-    uint64_t attacks = 0;
-
-    int rank, file;
-    int targetRank = square / 8;
-    int targetFile = square % 8;
-
-    for (rank = targetRank + 1; rank <= 7; rank++) {
-        attacks |= 1ULL << (rank * 8 + targetFile);
-        if (block & (1ULL << (rank * 8 + targetFile))) break;
-    }
-
-    for (rank = targetRank - 1; rank >= 0; rank--) {
-        attacks |= 1ULL << (rank * 8 + targetFile);
-        if (block & (1ULL << (rank * 8 + targetFile))) break;
-    }
-
-    for (file = targetFile + 1; file <= 7; file++) {
-        attacks |= 1ULL << (targetRank * 8 + file);
-        if (block & (1ULL << (targetRank * 8 + file))) break;
-    }
-
-    for (file = targetFile - 1; file >= 0; file--) {
-        attacks |= 1ULL << (targetRank * 8 + file);
-        if (block & (1ULL << (targetRank * 8 + file))) break; 
-    }
-
-    return attacks;
-}
-
 // Initialize All
-void Chessboard::initAll() {
-    initLeapersAttacks();
-    initSlidingAttacks(bishop);
-    initSlidingAttacks(rook);
-}
-
-// Initialize Leaper Piece Attacks
-void Chessboard::initLeapersAttacks() {
-    // loop over 64 board squares
-    for (int square = 0; square < 64; square++)
-    {
-        // init pawn attacks
-        pawnAttacks[white][square] = maskPawnAttacks(square, white);
-        pawnAttacks[black][square] = maskPawnAttacks(square, black);
-        
-        // init knight attacks
-        knightAttacks[square] = maskKnightAttacks(square);
-        
-        // init king attacks
-        kingAttacks[square] = maskKingAttacks(square);
-    }
-}
-
-// Initialize Sliding Piece Attacks
-void Chessboard::initSlidingAttacks(int bishop) {
-    for (int square = 0; square < 64; square++) {
-        bishopMasks[square] = maskBishopAttacks(square);
-        rookMasks[square] = maskRookAttacks(square);
-
-        uint64_t attackMask = (bishop ? bishopMasks[square] : rookMasks[square]);
-
-        int relevantBitsCount = countBits(attackMask);
-        int occupancyIndices = (1 << relevantBitsCount);
-
-        for (int index = 0; index < occupancyIndices; index++) {
-            
-            if (bishop) {
-                uint64_t occupancy = setOccupancy(index, relevantBitsCount, bishopMasks[square]);
-                int magicIndex = (int)((occupancy * bishopMagicNumbers[square]) >> (64 - bishopRelevantBits[square]));
-                bishopAttacks[square][magicIndex] = bishopAttacksOnTheFly(square, occupancy);
-            }
-            else {
-                uint64_t occupancy = setOccupancy(index, relevantBitsCount, rookMasks[square]);
-                int magicIndex = (int)((occupancy * rookMagicNumbers[square]) >> (64 - rookRelevantBits[square]));
-                rookAttacks[square][magicIndex] = rookAttacksOnTheFly(square, occupancy);
-            }            
-        }
-    }
-}
-
-// Set occupancies
-uint64_t Chessboard::setOccupancy(int index, int bitsInMask, uint64_t attackMask) const {
-    uint64_t occupancy = 0ULL;
-
-    for (int count = 0; count < bitsInMask; count++) {
-        int square = getLSBIndex(attackMask);
-        CLEAR_BIT(attackMask, square);
-        if (index & (1 << count)) {
-            occupancy |= (1ULL << square);
-        }
-    }
-
-    return occupancy;
-}
-
-// Generate 32-bit pseudo-legal numbers
-unsigned int Chessboard::getRandomU32Number() const {
-    unsigned int number = randomState;
-
-    // Xorshift algorithm
-    number ^= number << 13;
-    number ^= number >> 17;
-    number ^= number << 5;
-
-    randomState = number;
-
-    return number;
-}
-
-// Generate 64-bit pseudo-legal numbers
-uint64_t Chessboard::getRandomU64Number() const {
-    uint64_t number1, number2, number3, number4;
-
-    number1 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
-    number2 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
-    number3 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
-    number4 = (uint64_t)(getRandomU32Number()) & 0xFFFF;
-
-    return number1 | (number2 << 16) | (number3 << 32) | (number4 << 48);
-}
-
-// Generate magic number candidate
-uint64_t Chessboard::generateMagicNumber() const {
-    return getRandomU64Number() & getRandomU64Number() & getRandomU64Number();
-}
-
-// Find appropriate magic number
-uint64_t Chessboard::findMagicNumber(int square, int relevantBits, int bishop) const {
-    uint64_t occupancies[4096];
-    uint64_t attacks[4096];
-
-    uint64_t usedAttacks[4096];
-    uint64_t attackMask = bishop ? maskBishopAttacks(square) : maskRookAttacks(square);
-
-    int occupancyIndices = 1 << relevantBits;
-
-    for (int index = 0; index < occupancyIndices; index++) {
-        occupancies[index] = setOccupancy(index, relevantBits, attackMask);
-        attacks[index] = bishop ? bishopAttacksOnTheFly(square, occupancies[index]) : rookAttacksOnTheFly(square, occupancies[index]);
-    }
-
-    // Test Magic Numbers
-    for (int randomCount = 0; randomCount < 100000000; randomCount++) {
-        // Generate Magic Number Candidate
-        uint64_t magicNumber = generateMagicNumber();
-
-        // Skip inappropriate Magic Numbers
-        if(countBits((attackMask * magicNumber) & 0xFF00000000000000) < 6) continue;
-
-        // Initialize used attacks
-        memset(usedAttacks, 0ULL, sizeof(usedAttacks));
-
-        int index, fail;
-        
-        // Check if the magic number is appropriate
-        for (index = 0, fail = 0; !fail && index < occupancyIndices; index++) {
-            int magicIndex = (int)((occupancies[index] * magicNumber) >> (64 - relevantBits));
-
-            if (usedAttacks[magicIndex] == 0ULL) {
-                usedAttacks[magicIndex] = attacks[index];
-            } else if (usedAttacks[magicIndex] != attacks[index]) {
-                fail = 1;
-            }
-        }
-        if (!fail)
-            return magicNumber;
-    }
-    std::cout << "Magic Number not found!" << std::endl;
-    return 0ULL;
-}
-
-// Initialize Magic Numbers
-// void Chessboard::initMagicNumbers() {
-//     for (int square = 0; square < 64; square++) {
-//         std::cout << "0x" << std::hex << findMagicNumber(square, rookRelevantBits[square], rook) << "ULL, " << std::endl;
-//     }
-//     std::cout << std::endl;
-//     for (int square = 0; square < 64; square++) {
-//         std::cout << "0x" << std::hex << findMagicNumber(square, bishopRelevantBits[square], bishop) << "ULL, " << std::endl;
-//     }
+// void Chessboard::initAll() {
+//     Move::initLeapersAttacks();
+//     Move::initSlidingAttacks(bishop);
+//     Move::initSlidingAttacks(rook);
 // }
 
-// Get Bishop Attacks
-uint64_t Chessboard::getBishopAttacks(int square, uint64_t occupancy) const {
-    occupancy &= bishopMasks[square];
-    occupancy *= bishopMagicNumbers[square];
-    occupancy >>= 64 - bishopRelevantBits[square];
-
-    return bishopAttacks[square][occupancy];
-}
-
-// Get Rook Attacks
-uint64_t Chessboard::getRookAttacks(int square, uint64_t occupancy) const {
-    occupancy &= rookMasks[square];
-    occupancy *= rookMagicNumbers[square];
-    occupancy >>= 64 - rookRelevantBits[square];
-
-    return rookAttacks[square][occupancy];
-}
-
-// Get Queen Attacks
-uint64_t Chessboard::getQueenAttacks(int square, uint64_t occupancy) const {
-    return getBishopAttacks(square, occupancy) | getRookAttacks(square, occupancy);
-}
 
 // void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRank, int piece) {
 //     std::cout << "\nMoving piece: " << piece << " from (" << startFile << ", " << startRank << ") to (" << endFile << ", " << endRank << ")" << std::endl;

@@ -1,10 +1,11 @@
 #include "game.hpp"
+#include "move.hpp"
 #include "macros.hpp"
 #include <iostream>
-#include "preComputedMoveData.hpp"
 
 Game::Game()
     : chessboard(window.getRenderer()), window("Chessboard", 800, 800, &chessboard) {
+        Move move;
         // std::cout << "Game constructor: chessboard address = " << &chessboard << std::endl;
     }
 
