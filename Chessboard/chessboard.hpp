@@ -7,8 +7,8 @@
 #include <unordered_map>
 #include <cstdint>
 
-#include "move.hpp"
-#include "bitboard.hpp"
+#include "../Move/move.hpp"
+#include "../Macros/bitboard.hpp"
 
 class Move;
 struct moves;
@@ -80,10 +80,11 @@ class Chessboard {
         static void printAttackedSquares(int side);
 
         static inline void generateMoves(moves *moveList);
-        static inline int makeMove(int move, int moveFlag);
+        static inline bool makeMove(int move, int moveFlag);
         static inline int getTimeMs();
         static inline void perftDriver(int depth);
         static void perftTest(int depth);
+        static int parseMove(char *moveString);
 };
 
 

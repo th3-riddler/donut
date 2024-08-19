@@ -1,8 +1,8 @@
 #ifndef MOVE_HPP
 #define MOVE_HPP
 
-#include "chessboard.hpp" // Include the header file where Chessboard is defined
-#include "macros.hpp"
+#include "../Chessboard/chessboard.hpp"
+#include "../Macros/macros.hpp"
 #include <iostream>
 
 class Chessboard;

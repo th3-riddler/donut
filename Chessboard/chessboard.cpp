@@ -1,5 +1,5 @@
 #include "chessboard.hpp"
-#include "macros.hpp"
+#include "../Macros/macros.hpp"
 
 #include <sstream>
 #include <iostream>
@@ -252,16 +252,18 @@ void Chessboard::printMoveList(moves *moveList) {
 
 void Chessboard::getPawnMoves() {
 
-    parseFEN(trickyPosition);
+    parseFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
     printBoard();
 
-    moves moveList[1];
+    int move = parseMove("c7c5");
 
-    generateMoves(moveList);
-
-    // int start = getTimeMs();
-
-    perftTest(5);
+    if (move) {
+        makeMove(move, allMoves);
+        printBoard();
+    }
+    else {
+        std::cout << "Illegal move!" << std::endl;
+    }
 }
 
 // Generate all moves
@@ -562,7 +564,7 @@ inline void Chessboard::generateMoves(moves *moveList) {
 }
 
 // Make a Move on the board
-inline int Chessboard::makeMove(int move, int moveFlag) {
+inline bool Chessboard::makeMove(int move, int moveFlag) {
     // Quite Moves
     if (moveFlag == allMoves) {
         copyBoard();
@@ -646,10 +648,10 @@ inline int Chessboard::makeMove(int move, int moveFlag) {
 
         if (isSquareAttacked(getLSBIndex(((bitboard.sideToMove == white) ? bitboard.bitboards[k] : bitboard.bitboards[K])), bitboard.sideToMove)) {
             takeBack();
-            return 0;
+            return false;
         }
         else {
-            return 1;
+            return true;
         }
     }
     else { // Capture Moves
@@ -657,10 +659,10 @@ inline int Chessboard::makeMove(int move, int moveFlag) {
             makeMove(move, allMoves);
         }
         else {
-            return 0;
+            return false;
         }
     }
-    return 0;
+    return false;
 }
 
 // Detect if the given square is under attack by the given color
@@ -766,4 +768,30 @@ void Chessboard::perftTest(int depth) {
     std::cout << "  Depth: " << depth << std::endl <<
                  "  Nodes: " << nodes << std::endl <<
                  "  Time: " << getTimeMs() - start << "ms" << std::endl << std::endl;
+}
+
+int Chessboard::parseMove(char *moveString) {
+
+    moves moveList[1];
+    generateMoves(moveList);
+
+    int sourceSquare = (moveString[0] - 'a') + (7 - (8 - (moveString[1] - '0'))) * 8;
+    int targetSquare = (moveString[2] - 'a') + (7 - (8 - (moveString[3] - '0'))) * 8;
+
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
+        int move = moveList->moves[moveCount];
+
+        if (sourceSquare == getMoveSource(move) && targetSquare == getMoveTarget(move)) {
+            int promotedPiece = getMovePromoted(move);
+
+            if (promotedPiece) {
+                if (moveString[4] == Move::promotedPieces[promotedPiece]) {
+                    return move;
+                }
+                continue;
+            }
+            return move;
+        }
+    }
+    return 0;
 }

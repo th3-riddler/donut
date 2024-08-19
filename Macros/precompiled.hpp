@@ -1,5 +1,5 @@
-#include "chessboard.hpp"
-#include "move.hpp"
+#include "../Chessboard/chessboard.hpp"
+#include "../Move/move.hpp"
 #include "bitboard.hpp"
 #include "macros.hpp"
 #include <iostream>

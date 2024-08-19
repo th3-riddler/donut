@@ -4,21 +4,22 @@ CFLAGS = -Wall -g -Wno-char-subscripts -O3
 
 TARGET = reduxinator
 
-SRCS = main.cpp chessboard.cpp move.cpp
+SRCS = main.cpp Chessboard/chessboard.cpp Move/move.cpp
 
-OBJS = $(SRCS:.cpp=.o)
+OBJS = main.o Chessboard/chessboard.o Move/move.o
 
 # Precompiled header
-PCH = precompiled.hpp
+PCH = Macros/precompiled.hpp
+PCH_GCH = $(PCH).gch
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(COMPILER) $(CFLAGS) -o $(TARGET) $(OBJS)
-	rm -f $(OBJS)  # Rimuove i file oggetto dopo la creazione dell'eseguibile
+	rm -f Chessboard/chessboard.o Move/move.o main.o
 
 %.o: %.cpp $(PCH_GCH)
-	$(COMPILER) $(CFLAGS) -c $<
+	$(COMPILER) $(CFLAGS) -c $< -o $@
 
 $(PCH_GCH): $(PCH)
 	$(COMPILER) $(CFLAGS) -c $<
