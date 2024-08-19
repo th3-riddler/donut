@@ -9,6 +9,7 @@
 
 #include "../Move/move.hpp"
 #include "../Macros/bitboard.hpp"
+#include "../Search/search.hpp"
 
 class Move;
 struct moves;
@@ -20,7 +21,7 @@ class Chessboard {
         static BitBoard bitboard;
 
         static void init();
-        static void getPawnMoves();
+
         static void printBitboards(uint64_t bitboard);
 
         enum { white, black, both };
@@ -85,6 +86,9 @@ class Chessboard {
         static inline void perftDriver(int depth);
         static void perftTest(int depth);
         static int parseMove(char *moveString);
+        static void parsePosition(char *command);
+        static void parseGo(char *command);
+        static void uciLoop();
 };
 
 

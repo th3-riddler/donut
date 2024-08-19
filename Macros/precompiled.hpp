@@ -2,8 +2,9 @@
 #include "../Move/move.hpp"
 #include "bitboard.hpp"
 #include "macros.hpp"
+#include <stdlib.h>
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <string>
 #include <map>
-#include <memory>

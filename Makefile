@@ -1,12 +1,12 @@
 COMPILER = g++
 
-CFLAGS = -Wall -g -Wno-char-subscripts -O3
+CFLAGS = -Wall -g -Wno-char-subscripts -Wno-write-strings -O3
 
 TARGET = reduxinator
 
 SRCS = main.cpp Chessboard/chessboard.cpp Move/move.cpp
 
-OBJS = main.o Chessboard/chessboard.o Move/move.o
+OBJS = main.o Chessboard/chessboard.o Move/move.o Search/search.o
 
 # Precompiled header
 PCH = Macros/precompiled.hpp
@@ -16,7 +16,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(COMPILER) $(CFLAGS) -o $(TARGET) $(OBJS)
-	rm -f Chessboard/chessboard.o Move/move.o main.o
+	rm -f Chessboard/chessboard.o Move/move.o main.o Search/search.o
 
 %.o: %.cpp $(PCH_GCH)
 	$(COMPILER) $(CFLAGS) -c $< -o $@

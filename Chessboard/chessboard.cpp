@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <stdlib.h>
 #include <iomanip>
 #include <sys/time.h>
 
@@ -52,8 +53,8 @@ void Chessboard::init() {
 
     initCharPieces();
 
-    getPawnMoves();
     
+    uciLoop();
 }
 
 // Parse the FEN string
@@ -248,23 +249,6 @@ void Chessboard::printMoveList(moves *moveList) {
         0100 0000 0000 0000 0000 0000 --> en passant flag               0x400000
         1000 0000 0000 0000 0000 0000 --> castling flag                 0x800000
 */
-
-
-void Chessboard::getPawnMoves() {
-
-    parseFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
-    printBoard();
-
-    int move = parseMove("c7c5");
-
-    if (move) {
-        makeMove(move, allMoves);
-        printBoard();
-    }
-    else {
-        std::cout << "Illegal move!" << std::endl;
-    }
-}
 
 // Generate all moves
 inline void Chessboard::generateMoves(moves *moveList) {
@@ -794,4 +778,128 @@ int Chessboard::parseMove(char *moveString) {
         }
     }
     return 0;
+}
+
+void Chessboard::parsePosition(char *command) {
+    command += 9;
+    char *currentChar = command;
+
+    // Parse "startpos" command
+    if(strncmp(command, "startpos", 8) == 0) {
+        // Initialize board to starting position
+        parseFEN(startPosition);
+    }
+    else {
+        // Parse FEN string
+        currentChar = strstr(command, "fen");
+
+        if (currentChar == NULL) {
+            parseFEN(startPosition);
+        }
+        else {
+            currentChar += 4;
+            parseFEN(currentChar);
+        }
+    }
+
+    // Parse moves
+    currentChar = strstr(command, "moves");
+
+    if (currentChar != NULL) {
+        currentChar += 6;
+
+        while(*currentChar) {
+            int move = parseMove(currentChar);
+            if (move == 0) {
+                break;
+            }
+            makeMove(move, allMoves);
+
+            while (*currentChar && *currentChar != ' ') {
+                currentChar++;
+            }
+            currentChar++;
+        }
+    }
+
+    printBoard();
+}
+
+void Chessboard::parseGo(char *command) {
+    int depth = -1;
+    char *currentDepth = NULL;
+
+    if ((currentDepth = strstr(command, "depth"))) {
+        depth = atoi(currentDepth + 6);
+    }
+    else{
+        depth = 6;
+    }
+
+    Search::search(depth);
+}
+
+
+/*
+    GUI Commands
+        - "uci" --> "uciok"
+        - "isready" --> "readyok"
+        - "ucinewgame"
+    
+*/
+
+void Chessboard::uciLoop() {
+
+    // Reset STDIN and STDOUT buffers
+    setbuf(stdin, NULL);
+    setbuf(stdout, NULL);
+
+    // Define User / GUI input buffer
+    char input[2000];
+
+    // Print Engine Information
+    std::cout << "id name Reduxinator" << std::endl;
+    std::cout << "id author Redux" << std::endl;
+    std::cout << "uciok" << std::endl;
+
+    while (true) {
+        // Reset input buffer
+        memset(input, 0, sizeof(input));
+        fflush(stdout);
+
+        if(!fgets(input, 2000, stdin)) {
+            continue;
+        }
+
+        else if (input[0] == '\n') {
+            continue;
+        }
+
+        else if (strncmp(input, "isready", 7) == 0) {
+            std::cout << "readyok" << std::endl;
+            continue;
+        }
+
+        else if (strncmp(input, "position", 8) == 0) {
+            parsePosition(input);
+        }
+
+        else if (strncmp(input, "ucinewgame", 10) == 0) {
+            parsePosition("position startpos");
+        }
+
+        else if (strncmp(input, "go", 2) == 0) {
+            parseGo(input);
+        }
+
+        else if (strncmp(input, "quit", 4) == 0) {
+            break;
+        }
+
+        else if (strncmp(input, "uci", 3) == 0) {
+            std::cout << "id name Reduxinator" << std::endl;
+            std::cout << "id author Redux" << std::endl;
+            std::cout << "uciok" << std::endl;
+        }
+    }
 }
