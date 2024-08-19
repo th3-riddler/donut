@@ -8,7 +8,6 @@
 #include <cstdint>
 
 #include "move.hpp"
-#include "piece.hpp"
 #include "bitboard.hpp"
 
 class Move;
@@ -16,17 +15,9 @@ struct moves;
 
 class Chessboard {
     public:
-        explicit Chessboard(SDL_Renderer* renderer);
-        ~Chessboard();
-
-        void drawGameState();
-        void handleEvent(const SDL_Event& e);
         static void parseFEN(const char *fen);
 
         static BitBoard bitboard;
-
-        int getPieceAt(int file, int rank) const;
-        void movePiece(int fromFile, int fromRank, int toFile, int toRank, int piece);
 
         static void init();
         static void getPawnMoves();
@@ -68,7 +59,6 @@ class Chessboard {
 
 
     private:
-        SDL_Renderer* renderer;
         const int squareSize = 100;
         const int boardSize = 8;
 
@@ -78,44 +68,22 @@ class Chessboard {
         static char asciiPieces[13];
         static const char *unicodePieces[13]; // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
         static int charPieces[128]; // Inizializza tutto a 0
+        static long nodes;
         
         static inline void initCharPieces();
-        
-
-        std::unordered_map<char, SDL_Texture*> pieceTextures; // Maps piece characters to textures
-
-        void loadPieceTextures();
-
-        void draw();
-        void drawPieces();
-        void drawDraggedPiece(int pieceToDraw);
-        void generateSlidingMoves(int startSquare, int piece);
-        void generateLeapingMoves(int startSquare, int piece);
 
         static void printBoard();
         static void printMove(int move);
         static void printMoveList(moves *moveList);
-
-        void colorSquare();
-        bool isInValidMoveList(int file, int rank, int piece);
         
-        void initAll();
-
         static inline bool isSquareAttacked(int square, int side);
         static void printAttackedSquares(int side);
 
         static inline void generateMoves(moves *moveList);
         static inline int makeMove(int move, int moveFlag);
-
-        // Drag-and-drop related members
-        bool dragging = false;
-        int draggedPiece = 0;
-        int draggedPieceStartX = -1;
-        int draggedPieceStartY = -1;
-        int draggedPieceX = -1;
-        int draggedPieceY = -1;
-        int mouseX = -1;
-        int mouseY = -1;
+        static inline int getTimeMs();
+        static inline void perftDriver(int depth);
+        static void perftTest(int depth);
 };
 
 

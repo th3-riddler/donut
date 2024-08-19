@@ -33,7 +33,7 @@ class Move {
         static uint64_t knightAttacks[64];
         static uint64_t kingAttacks[64];
 
-        static char promotedPieces[8];
+        static char promotedPieces[11];
         static const int castlingRightsMask[64];
 
         static inline void addMove(moves *moveList, int move) {

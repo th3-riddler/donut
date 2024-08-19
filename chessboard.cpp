@@ -1,16 +1,16 @@
 #include "chessboard.hpp"
-#include "gameWindow.hpp"
 #include "macros.hpp"
 
-#include <SDL2/SDL_image.h>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <sys/time.h>
 
-// Chessboard::Chessboard(SDL_Renderer* renderer) : renderer(renderer) {
-//     initializeCharPieces();
-//     // loadPieceTextures();
-// }
+/*
+TODO:
+- Change the way occupancies bitboards are updated (change them in the same time the pieces are moved and not regenerating them every time)
+- Change the generateMoves function to generate all legal moves in one go
+*/
 
 char Chessboard::asciiPieces[13] = "PNBRQKpnbrqk";
 const char* Chessboard::squareToCoordinates[64] = {
@@ -46,6 +46,8 @@ inline void Chessboard::initCharPieces() {
 
 BitBoard Chessboard::bitboard;
 
+long Chessboard::nodes;
+
 void Chessboard::init() {
 
     initCharPieces();
@@ -54,132 +56,7 @@ void Chessboard::init() {
     
 }
 
-
-// void Chessboard::drawGameState() {
-
-//     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); // Imposta la modalità di blending
-
-//     draw();
-    
-//     if (dragging) {
-//         colorSquare();
-//     }
-
-//     drawPieces();
-
-//     if (dragging) {
-//         // print the position of the dragged piece
-//         drawDraggedPiece(this->draggedPiece);
-//     }
-// }
-
-// void Chessboard::colorSquare() {
-//     // Imposta il colore per le caselle evidenziate
-//     SDL_SetRenderDrawColor(renderer, 248, 52, 52, 150); // Usa un'opacità fissa
-
-//     // Disegna tutte le caselle evidenziate in un batch
-//     SDL_Rect dstRect = {0, 0, squareSize, squareSize};
-//     for (const auto& move : moves) {
-//         if (move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY) {
-//             dstRect.x = move.toFile * squareSize;
-//             dstRect.y = (7 - move.toRank) * squareSize;
-//             SDL_RenderFillRect(renderer, &dstRect);
-//         }
-//     }
-// }
-
-// void Chessboard::drawDraggedPiece(int pieceToDraw) {
-//     if (dragging && pieceToDraw != Piece::None) {
-        
-//         // std::cout << "Texture to draw: " << pieceTextures[Piece::getSymbol(pieceToDraw)] << std::endl;
-//         int mouseX, mouseY;
-//         SDL_GetMouseState(&mouseX, &mouseY);
-//         SDL_Rect dstRect = { mouseX - (squareSize / 2), mouseY - (squareSize / 2), squareSize, squareSize }; // Centra il pezzo sulla posizione del mouse
-
-//         SDL_RenderCopy(renderer, pieceTextures[Piece::getSymbol(pieceToDraw)], nullptr, &dstRect); // Disegna il pezzo trascinato alla posizione del mouse
-//     }
-// }
-
-// void Chessboard::draw() {
-//     // std::cout << "Chessboard::draw: chessboard address = " << this << std::endl;
-//     SDL_Rect square;
-//     square.w = squareSize;
-//     square.h = squareSize;
-
-//     for (int row = 0; row < boardSize; ++row) {
-//         for (int col = 0; col < boardSize; ++col) {
-//             if ((row + col) % 2 == 0) {
-//                 SDL_SetRenderDrawColor(renderer, 242, 225, 195, 255); // Light
-//             } else {
-//                 SDL_SetRenderDrawColor(renderer, 195, 160, 130, 255); // Dark
-//             }
-//             square.x = col * squareSize;
-//             square.y = row * squareSize;
-//             SDL_RenderFillRect(renderer, &square);
-//         }
-//     }
-// }
-
-// void Chessboard::loadPieceTextures() {
-//     // std::cout << "Chessboard::loadTextures: chessboard address = " << this << std::endl;
-//     std::unordered_map<char, std::string> pieceFiles = {
-//         {'P', "images/wp.png"}, {'N', "images/wN.png"}, {'B', "images/wB.png"},
-//         {'R', "images/wR.png"}, {'Q', "images/wQ.png"}, {'K', "images/wK.png"},
-//         {'p', "images/bp.png"}, {'n', "images/bN.png"}, {'b', "images/bB.png"},
-//         {'r', "images/bR.png"}, {'q', "images/bQ.png"}, {'k', "images/bK.png"}
-//     };
-
-//     for (const auto& pair : pieceFiles) {
-//         SDL_Surface* surface = IMG_Load(pair.second.c_str());
-//         if (!surface) {
-//             std::cerr << "Failed to load image: " << pair.second << " SDL_image Error: " << IMG_GetError() << std::endl;
-//             continue;
-//         }
-//         pieceTextures[pair.first] = SDL_CreateTextureFromSurface(renderer, surface);
-//         SDL_FreeSurface(surface);
-//     }
-//     // printa le texture caricate
-//     // for (const auto& pair : pieceTextures) {
-//     //     std::cout << "Piece: " << pair.first << " Texture: " << pair.second << std::endl;
-//     // }
-// }
-
-Chessboard::~Chessboard() {
-    for (auto& pair : pieceTextures) {
-        SDL_DestroyTexture(pair.second);
-    }
-}
-
-// void Chessboard::drawPieces() {
-//     // std::cout << "Chessboard::drawPieces: chessboard address = " << this << std::endl;
-//     auto drawPiece = [&](uint64_t bitboard, char piece) {
-//         for (int i = 0; i < 64; ++i) {
-//             if (bitboard & (1ULL << i)) {
-//                 int x = (i % 8) * squareSize;
-//                 int y = (7 - i / 8) * squareSize; // Flip y-axis for correct orientation
-//                 SDL_Rect dstRect = {x, y, squareSize, squareSize};
-//                 SDL_RenderCopy(renderer, pieceTextures[piece], nullptr, &dstRect);
-//             }
-//         }
-//     };
-
-//     // printBitboards();
-
-//     drawPiece(bitboard.whitePawns, 'P');
-//     drawPiece(bitboard.whiteKnights, 'N');
-//     drawPiece(bitboard.whiteBishops, 'B');
-//     drawPiece(bitboard.whiteRooks, 'R');
-//     drawPiece(bitboard.whiteQueens, 'Q');
-//     drawPiece(bitboard.whiteKing, 'K');
-
-//     drawPiece(bitboard.blackPawns, 'p');
-//     drawPiece(bitboard.blackKnights, 'n');
-//     drawPiece(bitboard.blackBishops, 'b');
-//     drawPiece(bitboard.blackRooks, 'r');
-//     drawPiece(bitboard.blackQueens, 'q');
-//     drawPiece(bitboard.blackKing, 'k');
-// }
-
+// Parse the FEN string
 void Chessboard::parseFEN(const char *fen) {
 
     // Reset board position and state variables
@@ -273,99 +150,7 @@ void Chessboard::parseFEN(const char *fen) {
     std::cout << "FEN: " << fen << std::endl;
 }
 
-// void Chessboard::handleEvent(const SDL_Event& e) {
-//     // std::cout << "Chessboard::handleEvent: chessboard address = " << this << std::endl;
-//     // printBitboards();
-//     int draggedPiece;
-//     if (e.type == SDL_MOUSEBUTTONDOWN) {
-//         SDL_GetMouseState(&mouseX, &mouseY);
-
-//         // Convert mouse position to board coordinates
-//         int file = mouseX / squareSize;
-//         int rank = 7 - (mouseY / squareSize);
-
-//         std::cout << "Clicked square: Rank --> " << rank << ", File --> " << file << std::endl;
-
-//         // Check if a piece is at the clicked position
-//         draggedPiece = getPieceAt(file, rank);
-//         std::cout << "Piece: " << draggedPiece << std::endl;
-
-//         if ((Piece::isColor(draggedPiece, sideToMove)) && draggedPiece != Piece::None) { // Check if the piece belongs to the player whose turn it is
-//             dragging = true;
-//             draggedPieceStartX = file;
-//             draggedPieceStartY = rank;
-//             this->draggedPiece = draggedPiece;
-
-//             // temporarily remove the piece from the board
-//             *bitboard.bitboards[this->draggedPiece] &= ~(1ULL << (rank * 8 + file));
-//         }
-//     }
-//     if (e.type == SDL_MOUSEMOTION && dragging) {
-//         SDL_GetMouseState(&mouseX, &mouseY);
-
-//         // Update the position of the dragged piece
-//         draggedPieceX = mouseX;
-//         draggedPieceY = mouseY;
-//     }
-//     if (e.type == SDL_MOUSEBUTTONUP && dragging) {
-//         SDL_GetMouseState(&mouseX, &mouseY);
-
-//         // Convert mouse position to board coordinates
-//         int file = mouseX / squareSize;
-//         int rank = 7 - (mouseY / squareSize);
-
-
-//         if ((file == draggedPieceStartX && rank == draggedPieceStartY) || !isInValidMoveList(file, rank, this->draggedPiece)) {
-//             // Put the piece back on the board
-//             std::cout << "Putting piece back on the board..." << std::endl;
-//             *bitboard.bitboards[this->draggedPiece] |= 1ULL << (draggedPieceStartY * 8 + draggedPieceStartX);
-//         } else {
-//             // Create a move object and validate the move
-//             // Move move(draggedPieceStartX, draggedPieceStartY, file, rank, static_cast<PieceType>(draggedPiece));
-//             std::cout << "Moving piece..." << std::endl;
-//             movePiece(draggedPieceStartX, draggedPieceStartY, file, rank, this->draggedPiece);
-
-//             std::cout << "Generating pseudo-legal moves..." << std::endl;
-//             // Generate pseudo-legal moves
-//             moves = generatePseudoLegalMoves();
-//         }
-
-//         dragging = false;
-//         this->draggedPiece = 0;
-//         draggedPieceStartX = -1;
-//         draggedPieceStartY = -1;
-//         draggedPieceX = -1;
-//         draggedPieceY = -1;
-//     }
-// }
-
-// bool Chessboard::isInValidMoveList(int file, int rank, int piece) {
-//     for (const auto& move : moves) {
-//         if (move.piece == piece && move.fromFile == draggedPieceStartX && move.fromRank == draggedPieceStartY && move.toFile == file && move.toRank == rank) {
-//             std::cout << "Valid move!" << std::endl;
-//             return true;
-//         }
-//     }
-//     std::cout << "Invalid move!" << std::endl;
-//     return false;
-// }
-
-// int Chessboard::getPieceAt(int file, int rank) const {
-//     // printBitboards();
-
-//     uint64_t pos = 1ULL << (rank * 8 + file);
-//     // std::cout << "Position: " << pos << std::endl;
-
-//     for (const auto& pair : bitboard.bitboards) {
-//         // std::cout << "Checking Piece: " << pair.first << " Bitboard: " << pair.second << std::endl;
-//         if (*pair.second & pos) {
-//             // std::cout << "Found Piece: " << pair.first << " at position: " << pos << std::endl;
-//             return pair.first;
-//         }
-//     }
-//     return Piece::None;
-// }
-
+// Print the given bitboard
 void Chessboard::printBitboards(uint64_t bitboard) {
     for (int rank = 0; rank < 8; rank++) {
         for (int file = 0; file < 8; file++) {
@@ -383,6 +168,7 @@ void Chessboard::printBitboards(uint64_t bitboard) {
     std::cout << "Bitboard: " << bitboard << "\n" << std::endl;
 }
 
+// Print the current board position
 void Chessboard::printBoard() {
     std::cout << std::endl;
     for (int rank = 0; rank < 8; rank++) {
@@ -449,84 +235,6 @@ void Chessboard::printMoveList(moves *moveList) {
     std::cout << "\n\n  Total moves: " << moveList->count << std::endl;
 }
 
-// std::vector<Move> Chessboard::generatePseudoLegalMoves() {      //  >> SINISTRA (diminuisce, basso) || << DESTRA (aumenta, alto)
-    
-//     moves.clear();
-
-//     // std::cout << "Generating pseudo-legal moves..." << std::endl;
-
-//     for (int startSquare = 0; startSquare < 64; ++startSquare) {
-//         int piece = getPieceAt(startSquare % 8, startSquare / 8);
-//         // std::cout << "Piece: " << piece << std::endl;
-
-//         if (piece != Piece::None){
-//             // std::cout << "Entered!\n" << std::endl;
-//             if (Piece::isColor(piece, sideToMove)) {
-//                 if (Piece::isSlidingPiece(piece)) {
-//                     // Generate sliding piece moves
-//                     // generateSlidingMoves(startSquare, piece);
-//                     getPawnMoves(startSquare, piece);
-//                 } else {
-//                     // generateLeapingMoves(startSquare, piece);
-//                 }
-//             }
-//         }
-//     }
-
-//     std::cout << moves.size() << std::endl;
-
-//     // print the moves
-//     // for (const auto& move : moves) {
-//     //     std::cout << "Move: " << move.fromFile << ", " << move.fromRank << " --> " << move.toFile << ", " << move.toRank << std::endl;
-//     // }
-
-//     return moves;
-// }
-
-
-// void Chessboard::generateLeapingMoves(int startSquare, int piece) {
-
-//     if (Piece::getType(piece) == Piece::Pawn) {
-//         getPawnMoves(startSquare, piece, moves);
-//     } else if (Piece::getType(piece) == Piece::Knight) {
-//     } else if (Piece::getType(piece) == Piece::King) {
-//     }
-// }
-
-// void Chessboard::generateSlidingMoves(int startSquare, int piece) {
-
-//     int startDirIndex = (Piece::getType(piece) == Piece::Bishop) ? 4 : 0;
-//     int endDirIndex = (Piece::getType(piece) == Piece::Rook) ? 4 : 8;
-
-//     for (int directionIndex = startDirIndex; directionIndex < endDirIndex; ++directionIndex) {
-//         for (int n = 0; n < preComputedMoveData::numSquaresToEdge[startSquare][directionIndex]; ++n) {
-//             int targetSquare = startSquare + preComputedMoveData::directionOffsets[directionIndex] * (n + 1);
-//             int targetPiece = getPieceAt(targetSquare % 8, targetSquare / 8);
-
-//             // Blocked by friendly piece
-//             if (Piece::isColor(targetPiece, sideToMove)) {
-//                 // std::cout << "Blocked by friendly piece!" << std::endl;
-//                 break;
-//             }
-
-//             moves.push_back(Move(startSquare % 8, startSquare / 8, targetSquare % 8, targetSquare / 8, piece));
-//             std::cout << "Move: " << startSquare % 8 << ", " << startSquare / 8 << " --> " << targetSquare % 8 << ", " << targetSquare / 8 << std::endl;
-
-//             // Blocked by enemy piece
-//             if (Piece::isColor(targetPiece, sideToMove ^ 8)) {
-//                 // std::cout << "Blocked by enemy piece!" << std::endl;
-//                 break;
-//             }
-//         }
-//     }
-// }
-
-// std::vector<Move> Chessboard::generateMoves() {
-//     // std::vector<Move> moves;
-
-//     //return moves;
-// }
-
 
 /*
                Binary Move Bits                                         Hexidecimal Constants                          
@@ -542,44 +250,18 @@ void Chessboard::printMoveList(moves *moveList) {
 */
 
 
-
 void Chessboard::getPawnMoves() {
 
-    // initAll();
-
-    parseFEN("r3k2r/p1ppRpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
+    parseFEN(trickyPosition);
     printBoard();
 
     moves moveList[1];
 
     generateMoves(moveList);
 
-    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
-        int move = moveList->moves[moveCount];
-        copyBoard();
+    // int start = getTimeMs();
 
-        if (!makeMove(move, allMoves)) {
-            continue; 
-        }
-        printBoard();
-        getchar();
-
-        takeBack();
-        printBoard();
-        getchar();
-    }
-
-    // uint64_t occupancy = 0ULL;
-    // SET_BIT(occupancy, d7);
-    // SET_BIT(occupancy, c4);
-
-    // printBitboards(Move::getQueenAttacks(d5, occupancy));
-
-    // for (int targetSquare = 0; targetSquare < 64; ++targetSquare) {
-    //     if (attacks & (1ULL << targetSquare)) {
-    //         moves.push_back(Move(square % 8, square / 8, targetSquare % 8, targetSquare / 8, piece));
-    //     }
-    // }
+    perftTest(5);
 }
 
 // Generate all moves
@@ -889,15 +571,11 @@ inline int Chessboard::makeMove(int move, int moveFlag) {
         int targetSquare = getMoveTarget(move);
         int piece = getMovePiece(move);
         int promotedPiece = getMovePromoted(move);
-        int capture = getMoveCapture(move);
-        int doublePush = getMoveDoublePush(move);
-        int enPassant = getMoveEnPassant(move);
-        int castling = getMoveCastling(move);
 
         CLEAR_BIT(bitboard.bitboards[piece], sourceSquare);
         SET_BIT(bitboard.bitboards[piece], targetSquare);
 
-        if (capture) {
+        if (getMoveCapture(move)) {
             int startPiece, endPiece;
 
             if (bitboard.sideToMove == white) {
@@ -922,16 +600,16 @@ inline int Chessboard::makeMove(int move, int moveFlag) {
             SET_BIT(bitboard.bitboards[promotedPiece], targetSquare);
         }
 
-        if (enPassant) {
+        if (getMoveEnPassant(move)) {
             CLEAR_BIT(bitboard.bitboards[((bitboard.sideToMove == white) ? p : P)], targetSquare + ((bitboard.sideToMove == white) ? -8 : 8));
         }
         bitboard.enPassantSquare = noSquare;
 
-        if (doublePush) {
+        if (getMoveDoublePush(move)) {
             bitboard.enPassantSquare = targetSquare + ((bitboard.sideToMove == white) ? -8 : 8);
         }
 
-        if (castling) {
+        if (getMoveCastling(move)) {
             switch (targetSquare) {
                 case (g1):
                     CLEAR_BIT(bitboard.bitboards[R], h1);
@@ -951,6 +629,7 @@ inline int Chessboard::makeMove(int move, int moveFlag) {
                     break;
             }
         }
+
         bitboard.castlingRights &= Move::castlingRightsMask[sourceSquare] & Move::castlingRightsMask[targetSquare];
 
         memset(bitboard.occupancies, 0ULL, 24);
@@ -1027,42 +706,64 @@ void Chessboard::printAttackedSquares(int side) {
     std::cout << "\n     a b c d e f g h\n" << std::endl;
 }
 
-// Initialize All
-// void Chessboard::initAll() {
-//     Move::initLeapersAttacks();
-//     Move::initSlidingAttacks(bishop);
-//     Move::initSlidingAttacks(rook);
-// }
+inline int Chessboard::getTimeMs() {
+    struct timeval timeValue;
+    gettimeofday(&timeValue, NULL);
+    return timeValue.tv_sec * 1000 + timeValue.tv_usec / 1000;
+}
 
+inline void Chessboard::perftDriver(int depth) {
+    if (depth == 0) {
+        nodes++;
+        return;
+    }
 
-// void Chessboard::movePiece(int startFile, int startRank, int endFile, int endRank, int piece) {
-//     std::cout << "\nMoving piece: " << piece << " from (" << startFile << ", " << startRank << ") to (" << endFile << ", " << endRank << ")" << std::endl;
+    moves moveList[1];
+    generateMoves(moveList);
 
-//     // Verifica che le coordinate siano valide
-//     if (startFile < 0 || startFile >= 8 || startRank < 0 || startRank >= 8 ||
-//         endFile < 0 || endFile >= 8 || endRank < 0 || endRank >= 8) {
-//         std::cerr << "Invalid move coordinates!" << std::endl;
-//         return;
-//     }
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
 
-//     int startPosition = startRank * 8 + startFile;
-//     int endPosition = endRank * 8 + endFile;
+        copyBoard();
 
-//     // Rimuovi il pezzo dalla posizione di partenza
-//     if (piece != Piece::None) {
-//         for (const auto& pair : bitboard.bitboards) {
-//             if (*pair.second & (1ULL << endPosition)) {
-//                 *bitboard.bitboards[pair.first] &= ~(1ULL << endPosition); // Rimuovi il pezzo avversario
-//                 break;
-//             }
-//         }
-//         //bitboards[piece] &= ~(1ULL << startPosition); // Rimuovi il pezzo
+        if (!makeMove(moveList->moves[moveCount], allMoves)) {
+            continue; 
+        }
+
+        perftDriver(depth - 1);
+        takeBack();
+    }
+}
+
+void Chessboard::perftTest(int depth) {
+    std::cout << "\n    Performance Test\n" << std::endl;
+
+    moves moveList[1];
+    generateMoves(moveList);
+
+    int start = getTimeMs();
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
+
+        copyBoard();
+
+        if (!makeMove(moveList->moves[moveCount], allMoves)) {
+            continue; 
+        }
+
+        long commulativeNodes = nodes;
         
-//         *bitboard.bitboards[piece] |= (1ULL << endPosition);    // Posiziona il pezzo
+        perftDriver(depth - 1);
 
-//         //cambia il turno tra 0 e 8
-//         // sideToMove ^= 8;
-//         std::cout << "Piece moved successfully!" << std::endl;
-//         std::cout << "White to move: " << sideToMove << std::endl;
-//     }
-// }
+        long oldNodes = nodes - commulativeNodes;
+
+        takeBack();
+
+
+        std::cout << "  Move: ";
+        std::cout << squareToCoordinates[getMoveSource(moveList->moves[moveCount])] << squareToCoordinates[getMoveTarget(moveList->moves[moveCount])] << Move::promotedPieces[getMovePromoted(moveList->moves[moveCount])] << 
+                     "  Nodes: " << oldNodes << std::endl;
+    }
+    std::cout << std::endl;
+    std::cout << "  Depth: " << depth << std::endl <<
+                 "  Nodes: " << nodes << std::endl <<
+                 "  Time: " << getTimeMs() - start << "ms" << std::endl << std::endl;
+}

@@ -190,7 +190,7 @@ uint64_t Move::rookAttacks[64][4096];
 uint64_t Move::pawnAttacks[2][64];
 uint64_t Move::knightAttacks[64];
 uint64_t Move::kingAttacks[64];
-char Move::promotedPieces[8];
+char Move::promotedPieces[11];
 
 const int Move::castlingRightsMask[64] = {
     13, 15, 15, 15, 12, 15, 15, 14,
