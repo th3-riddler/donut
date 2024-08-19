@@ -192,6 +192,17 @@ uint64_t Move::knightAttacks[64];
 uint64_t Move::kingAttacks[64];
 char Move::promotedPieces[8];
 
+const int Move::castlingRightsMask[64] = {
+    13, 15, 15, 15, 12, 15, 15, 14,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+     7, 15, 15, 15,  3, 15, 15, 11
+};
+
 void Move::initPromotedPieces() {
     promotedPieces[Chessboard::Q] = 'q';
     promotedPieces[Chessboard::R] = 'r';

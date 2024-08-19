@@ -34,6 +34,7 @@ class Move {
         static uint64_t kingAttacks[64];
 
         static char promotedPieces[8];
+        static const int castlingRightsMask[64];
 
         static inline void addMove(moves *moveList, int move) {
             moveList->moves[moveList->count++] = move;

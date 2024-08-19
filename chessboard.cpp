@@ -547,7 +547,7 @@ void Chessboard::getPawnMoves() {
 
     // initAll();
 
-    parseFEN(trickyPosition);
+    parseFEN("r3k2r/p1ppRpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1");
     printBoard();
 
     moves moveList[1];
@@ -558,7 +558,9 @@ void Chessboard::getPawnMoves() {
         int move = moveList->moves[moveCount];
         copyBoard();
 
-        makeMove(move, allMoves);
+        if (!makeMove(move, allMoves)) {
+            continue; 
+        }
         printBoard();
         getchar();
 
@@ -894,6 +896,82 @@ inline int Chessboard::makeMove(int move, int moveFlag) {
 
         CLEAR_BIT(bitboard.bitboards[piece], sourceSquare);
         SET_BIT(bitboard.bitboards[piece], targetSquare);
+
+        if (capture) {
+            int startPiece, endPiece;
+
+            if (bitboard.sideToMove == white) {
+                startPiece = p;
+                endPiece = k;
+            }
+            else {
+                startPiece = P;
+                endPiece = K;
+            }
+
+            for (int bbPiece = startPiece; bbPiece <= endPiece; bbPiece++) {
+                if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
+                    CLEAR_BIT(bitboard.bitboards[bbPiece], targetSquare);
+                    break;
+                }
+            }
+        }
+
+        if (promotedPiece) {
+            CLEAR_BIT(bitboard.bitboards[piece], targetSquare);
+            SET_BIT(bitboard.bitboards[promotedPiece], targetSquare);
+        }
+
+        if (enPassant) {
+            CLEAR_BIT(bitboard.bitboards[((bitboard.sideToMove == white) ? p : P)], targetSquare + ((bitboard.sideToMove == white) ? -8 : 8));
+        }
+        bitboard.enPassantSquare = noSquare;
+
+        if (doublePush) {
+            bitboard.enPassantSquare = targetSquare + ((bitboard.sideToMove == white) ? -8 : 8);
+        }
+
+        if (castling) {
+            switch (targetSquare) {
+                case (g1):
+                    CLEAR_BIT(bitboard.bitboards[R], h1);
+                    SET_BIT(bitboard.bitboards[R], f1);
+                    break;
+                case (c1):
+                    CLEAR_BIT(bitboard.bitboards[R], a1);
+                    SET_BIT(bitboard.bitboards[R], d1);
+                    break;
+                case (g8):
+                    CLEAR_BIT(bitboard.bitboards[r], h8);
+                    SET_BIT(bitboard.bitboards[r], f8);
+                    break;
+                case (c8):
+                    CLEAR_BIT(bitboard.bitboards[r], a8);
+                    SET_BIT(bitboard.bitboards[r], d8);
+                    break;
+            }
+        }
+        bitboard.castlingRights &= Move::castlingRightsMask[sourceSquare] & Move::castlingRightsMask[targetSquare];
+
+        memset(bitboard.occupancies, 0ULL, 24);
+
+        for (int bbPiece = P; bbPiece <= K; bbPiece++) {
+            bitboard.occupancies[white] |= bitboard.bitboards[bbPiece];
+        }
+        for (int bbPiece = p; bbPiece <= k; bbPiece++) {
+            bitboard.occupancies[black] |= bitboard.bitboards[bbPiece];
+        }
+        bitboard.occupancies[both] = bitboard.occupancies[white] | bitboard.occupancies[black];
+
+        bitboard.sideToMove ^= 1; // Switch side to move
+
+        if (isSquareAttacked(getLSBIndex(((bitboard.sideToMove == white) ? bitboard.bitboards[k] : bitboard.bitboards[K])), bitboard.sideToMove)) {
+            takeBack();
+            return 0;
+        }
+        else {
+            return 1;
+        }
     }
     else { // Capture Moves
         if (getMoveCapture(move)) {
