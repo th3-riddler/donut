@@ -73,6 +73,7 @@ class Chessboard {
         const int boardSize = 8;
 
         enum { wk = 1, wq = 2, bk = 4, bq = 8 };
+        enum { allMoves, capturesOnly };
 
         static char asciiPieces[13];
         static const char *unicodePieces[13]; // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
@@ -103,7 +104,8 @@ class Chessboard {
         static inline bool isSquareAttacked(int square, int side);
         static void printAttackedSquares(int side);
 
-        static inline void generateMoves();
+        static inline void generateMoves(moves *moveList);
+        static inline int makeMove(int move, int moveFlag);
 
         // Drag-and-drop related members
         bool dragging = false;

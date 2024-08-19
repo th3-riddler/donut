@@ -411,11 +411,11 @@ void Chessboard::printBoard() {
     }
     std::cout << "\n     a b c d e f g h\n" << std::endl;
 
-    std::cout << "Side to move: " << (!bitboard.sideToMove ? "White" : "Black") << std::endl;
+    std::cout << "Side to move:         " << (!bitboard.sideToMove ? "White" : "Black") << std::endl;
 
-    std::cout << "En passant square: " << (bitboard.enPassantSquare != noSquare ? squareToCoordinates[bitboard.enPassantSquare] : "no") << std::endl;
+    std::cout << "En passant square:    " << (bitboard.enPassantSquare != noSquare ? squareToCoordinates[bitboard.enPassantSquare] : "no") << std::endl;
 
-    std::cout << "Castling: " << (bitboard.castlingRights & wk ? "K" : "-") << (bitboard.castlingRights & wq ? "Q" : "-") << (bitboard.castlingRights & bk ? "k" : "-") << (bitboard.castlingRights & bq ? "q" : "-") << std::endl;
+    std::cout << "Castling:             " << (bitboard.castlingRights & wk ? "K" : "-") << (bitboard.castlingRights & wq ? "Q" : "-") << (bitboard.castlingRights & bk ? "k" : "-") << (bitboard.castlingRights & bq ? "q" : "-") << std::endl;
 
     std::cout << std::endl;
 }
@@ -428,13 +428,18 @@ void Chessboard::printMove(int move) {
 // Print Move List
 void Chessboard::printMoveList(moves *moveList) {
 
-    std::cout << "\nmove    piece    capture    doublePush    enPassant    castling\n" << std::endl;
+    if (!moveList->count) {
+        std::cout << "No moves found!" << std::endl;
+        return;
+    }
+
+    std::cout << "\n    move    piece    capture    doublePush    enPassant    castling\n" << std::endl;
 
     for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
         int move = moveList->moves[moveCount];
-        std::cout << squareToCoordinates[getMoveSource(move)] <<
+        std::cout << "    " << squareToCoordinates[getMoveSource(move)] <<
                      squareToCoordinates[getMoveTarget(move)] << 
-                     Move::promotedPieces[getMovePromoted(move)] << "     " <<
+                     (getMovePromoted(move) ? Move::promotedPieces[getMovePromoted(move)] : ' ')<< "     " <<
                      unicodePieces[getMovePiece(move)] << "         " << 
                      (getMoveCapture(move) ? 1 : 0) << "           " << 
                      (getMoveDoublePush(move) ? 1 : 0) << "             " << 
@@ -542,14 +547,25 @@ void Chessboard::getPawnMoves() {
 
     // initAll();
 
+    parseFEN(trickyPosition);
+    printBoard();
+
     moves moveList[1];
-    moveList->count = 0;
 
+    generateMoves(moveList);
 
-    Move::addMove(moveList, encodeMove(d7, e8, P, Q, 1, 0, 0, 0));
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
+        int move = moveList->moves[moveCount];
+        copyBoard();
 
+        makeMove(move, allMoves);
+        printBoard();
+        getchar();
 
-    printMoveList(moveList);
+        takeBack();
+        printBoard();
+        getchar();
+    }
 
     // uint64_t occupancy = 0ULL;
     // SET_BIT(occupancy, d7);
@@ -565,7 +581,9 @@ void Chessboard::getPawnMoves() {
 }
 
 // Generate all moves
-inline void Chessboard::generateMoves() {
+inline void Chessboard::generateMoves(moves *moveList) {
+    moveList->count = 0;
+
     int sourceSquare, targetSquare;
 
     uint64_t bitboardCopy, attacks;
@@ -584,18 +602,18 @@ inline void Chessboard::generateMoves() {
                     if (!(targetSquare > h8) && !GET_BIT(bitboard.occupancies[both], targetSquare)) {
                         // Pawn Promotion
                         if (sourceSquare >= a7 && sourceSquare <= h7) {
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, Q, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, R, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, B, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, N, 0, 0, 0, 0));
                         }
                         else {
                             // One square pawn advance
-                            std::cout << "Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
 
                             // Double square pawn advance
                             if ((sourceSquare >= a2 && sourceSquare <= h2) && !GET_BIT(bitboard.occupancies[both], targetSquare + 8)) {
-                                std::cout << "Double Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare + 8] << std::endl;
+                                Move::addMove(moveList, encodeMove(sourceSquare, targetSquare + 8, piece, 0, 0, 1, 0, 0));
                             }
                         }
                     }
@@ -606,15 +624,15 @@ inline void Chessboard::generateMoves() {
                     while (attacks) {
                         targetSquare = getLSBIndex(attacks);
 
-                        // Pawn Promotion
+                        // Pawn Promotion-Capture
                         if (sourceSquare >= a7 && sourceSquare <= h7) {
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, Q, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, R, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, B, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, N, 1, 0, 0, 0));
                         }
                         else {
-                            std::cout << "Pawn Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
                         }
 
                         CLEAR_BIT(attacks, targetSquare);
@@ -626,8 +644,7 @@ inline void Chessboard::generateMoves() {
 
                         if (enPassantAttacks) {
                             int enPassantTarget = getLSBIndex(enPassantAttacks);
-
-                            std::cout << "Pawn en Passant Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[enPassantTarget] << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, enPassantTarget, piece, 0, 1, 0, 1, 0));
                         }
                     }
 
@@ -644,7 +661,7 @@ inline void Chessboard::generateMoves() {
                     if (!GET_BIT(bitboard.occupancies[both], f1) && !GET_BIT(bitboard.occupancies[both], g1)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e1, black) && !isSquareAttacked(f1, black)) {
-                            std::cout << "King Side Castling: e1g1" << std::endl;
+                            Move::addMove(moveList, encodeMove(e1, g1, piece, 0, 0, 0, 0, 1));
                         }
                     }
                 }
@@ -655,7 +672,7 @@ inline void Chessboard::generateMoves() {
                     if (!GET_BIT(bitboard.occupancies[both], d1) && !GET_BIT(bitboard.occupancies[both], c1) && !GET_BIT(bitboard.occupancies[both], b1)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e1, black) && !isSquareAttacked(d1, black)) {
-                            std::cout << "Queen Side Castling: e1c1" << std::endl;
+                            Move::addMove(moveList, encodeMove(e1, c1, piece, 0, 0, 0, 0, 1));
                         }
                     }
                 }
@@ -671,18 +688,18 @@ inline void Chessboard::generateMoves() {
                     if (!(targetSquare < a1) && !GET_BIT(bitboard.occupancies[both], targetSquare)) {
                         // Pawn Promotion
                         if (sourceSquare >= a2 && sourceSquare <= h2) {
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
-                            std::cout << "Pawn Promotion: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, q, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, r, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, b, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, n, 0, 0, 0, 0));
                         }
                         else {
                             // One square pawn advance
-                            std::cout << "Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
 
                             // Double square pawn advance
                             if ((sourceSquare >= a7 && sourceSquare <= h7) && !GET_BIT(bitboard.occupancies[both], targetSquare - 8)) {
-                                std::cout << "Double Pawn Push: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare - 8] << std::endl;
+                                Move::addMove(moveList, encodeMove(sourceSquare, targetSquare - 8, piece, 0, 0, 1, 0, 0));
                             }
                         }
                     }
@@ -693,15 +710,15 @@ inline void Chessboard::generateMoves() {
                     while (attacks) {
                         targetSquare = getLSBIndex(attacks);
 
-                        // Pawn Promotion
+                        // Pawn Promotion-Capture
                         if (sourceSquare >= a2 && sourceSquare <= h2) {
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "q" << std::endl;
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "r" << std::endl;
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "b" << std::endl;
-                            std::cout << "Pawn Promotion-Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << "n" << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, q, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, r, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, b, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, n, 1, 0, 0, 0));
                         }
                         else {
-                            std::cout << "Pawn Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
                         }
 
                         CLEAR_BIT(attacks, targetSquare);
@@ -713,8 +730,7 @@ inline void Chessboard::generateMoves() {
 
                         if (enPassantAttacks) {
                             int enPassantTarget = getLSBIndex(enPassantAttacks);
-
-                            std::cout << "Pawn en Passant Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[enPassantTarget] << std::endl;
+                            Move::addMove(moveList, encodeMove(sourceSquare, enPassantTarget, piece, 0, 1, 0, 1, 0));
                         }
                     }
 
@@ -731,7 +747,7 @@ inline void Chessboard::generateMoves() {
                     if (!GET_BIT(bitboard.occupancies[both], f8) && !GET_BIT(bitboard.occupancies[both], g8)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e8, white) && !isSquareAttacked(f8, white)) {
-                            std::cout << "King Side Castling: e8g8" << std::endl;
+                            Move::addMove(moveList, encodeMove(e8, g8, piece, 0, 0, 0, 0, 1));
                         }
                     }
                 }
@@ -742,7 +758,7 @@ inline void Chessboard::generateMoves() {
                     if (!GET_BIT(bitboard.occupancies[both], d8) && !GET_BIT(bitboard.occupancies[both], c8) && !GET_BIT(bitboard.occupancies[both], b8)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e8, white) && !isSquareAttacked(d8, white)) {
-                            std::cout << "Queen Side Castling: e8c8" << std::endl;
+                            Move::addMove(moveList, encodeMove(e8, c8, piece, 0, 0, 0, 0, 1));
                         }
                     }
                 }
@@ -760,9 +776,9 @@ inline void Chessboard::generateMoves() {
                     targetSquare = getLSBIndex(attacks);
 
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        std::cout << "Knight Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
                     else
-                        std::cout << "Knight Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -782,9 +798,9 @@ inline void Chessboard::generateMoves() {
                     targetSquare = getLSBIndex(attacks);
 
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        std::cout << "Bishop Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
                     else
-                        std::cout << "Bishop Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -804,9 +820,9 @@ inline void Chessboard::generateMoves() {
                     targetSquare = getLSBIndex(attacks);
 
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        std::cout << "Rook Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
                     else
-                        std::cout << "Rook Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -826,9 +842,9 @@ inline void Chessboard::generateMoves() {
                     targetSquare = getLSBIndex(attacks);
 
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        std::cout << "Queen Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
                     else
-                        std::cout << "Queen Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -848,9 +864,9 @@ inline void Chessboard::generateMoves() {
                     targetSquare = getLSBIndex(attacks);
 
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        std::cout << "King Move: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
                     else
-                        std::cout << "King Capture: " << squareToCoordinates[sourceSquare] << squareToCoordinates[targetSquare] << std::endl;
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -859,6 +875,35 @@ inline void Chessboard::generateMoves() {
             }
         }
     }
+}
+
+// Make a Move on the board
+inline int Chessboard::makeMove(int move, int moveFlag) {
+    // Quite Moves
+    if (moveFlag == allMoves) {
+        copyBoard();
+
+        int sourceSquare = getMoveSource(move);
+        int targetSquare = getMoveTarget(move);
+        int piece = getMovePiece(move);
+        int promotedPiece = getMovePromoted(move);
+        int capture = getMoveCapture(move);
+        int doublePush = getMoveDoublePush(move);
+        int enPassant = getMoveEnPassant(move);
+        int castling = getMoveCastling(move);
+
+        CLEAR_BIT(bitboard.bitboards[piece], sourceSquare);
+        SET_BIT(bitboard.bitboards[piece], targetSquare);
+    }
+    else { // Capture Moves
+        if (getMoveCapture(move)) {
+            makeMove(move, allMoves);
+        }
+        else {
+            return 0;
+        }
+    }
+    return 0;
 }
 
 // Detect if the given square is under attack by the given color

@@ -14,7 +14,7 @@
 // Macro to check if a bit at a given position is set
 #define GET_BIT(board, square) (((board) & (1ULL << (square))) != 0)
 
-#define emptyBoard (const char*)"8/8/8/8/8/8/8/8 w - - "
+#define emptyBoard (const char*)"8/8/8/8/8/8/8/8 b - - "
 
 #define startPosition (const char*)"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
@@ -42,5 +42,21 @@
 #define getMoveEnPassant(move) (move & 0x400000)
 
 #define getMoveCastling(move) (move & 0x800000)
+
+#define copyBoard()                                         \
+    uint64_t bitboardsCopy[12], occupanciesCopy[3];         \
+    int sideCopy, enPassantSquareCopy, castlingRightsCopy;  \
+    memcpy(bitboardsCopy, bitboard.bitboards, 96);          \
+    memcpy(occupanciesCopy, bitboard.occupancies, 24);      \
+    sideCopy = bitboard.sideToMove;                         \
+    enPassantSquareCopy = bitboard.enPassantSquare;         \
+    castlingRightsCopy = bitboard.castlingRights;           \
+
+#define takeBack()                                          \
+    memcpy(bitboard.bitboards, bitboardsCopy, 96);          \
+    memcpy(bitboard.occupancies, occupanciesCopy, 24);      \
+    bitboard.sideToMove = sideCopy;                         \
+    bitboard.enPassantSquare = enPassantSquareCopy;         \
+    bitboard.castlingRights = castlingRightsCopy;           \
 
 #endif // BITWISE_OPERATIONS_H
