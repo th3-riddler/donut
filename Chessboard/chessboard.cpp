@@ -558,7 +558,7 @@ void Chessboard::generateMoves(moves *moveList) {
 }
 
 // Make a Move on the board
-bool Chessboard::makeMove(int move, int moveFlag) {
+int Chessboard::makeMove(int move, int moveFlag) {
     // Quite Moves
     if (moveFlag == allMoves) {
         copyBoard();
@@ -642,10 +642,10 @@ bool Chessboard::makeMove(int move, int moveFlag) {
 
         if (isSquareAttacked(getLSBIndex(((bitboard.sideToMove == white) ? bitboard.bitboards[k] : bitboard.bitboards[K])), bitboard.sideToMove)) {
             takeBack();
-            return false;
+            return 0;
         }
         else {
-            return true;
+            return 1;
         }
     }
     else { // Capture Moves
@@ -653,10 +653,11 @@ bool Chessboard::makeMove(int move, int moveFlag) {
             makeMove(move, allMoves);
         }
         else {
-            return false;
+            return 0;
         }
     }
-    return false;
+    std::cout << "Invalid Move!" << std::endl;
+    return 0;
 }
 
 // Detect if the given square is under attack by the given color

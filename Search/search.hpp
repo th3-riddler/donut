@@ -9,6 +9,7 @@
 class Search {
     public:
         static int negamax(int alpha, int beta, int depth);
+        static int quiescenceSearch(int alpha, int beta);
 
         static void searchPosition(int depth);
 

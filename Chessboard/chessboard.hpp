@@ -31,7 +31,7 @@ class Chessboard {
         static void printBitboards(uint64_t bitboard);
 
         static void generateMoves(moves *moveList);
-        static bool makeMove(int move, int moveFlag);
+        static int makeMove(int move, int moveFlag);
         static void printMove(int move);
 
         static bool isSquareAttacked(int square, int side);
