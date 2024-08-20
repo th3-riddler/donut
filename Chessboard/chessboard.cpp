@@ -650,7 +650,7 @@ int Chessboard::makeMove(int move, int moveFlag) {
     }
     else { // Capture Moves
         if (getMoveCapture(move)) {
-            makeMove(move, allMoves);
+            return makeMove(move, allMoves);
         }
         else {
             return 0;
