@@ -871,11 +871,11 @@ void Chessboard::uciLoop() {
             continue;
         }
 
-        else if (input[0] == '\n') {
+        if (input[0] == '\n') {
             continue;
         }
 
-        else if (strncmp(input, "isready", 7) == 0) {
+        if (strncmp(input, "isready", 7) == 0) {
             std::cout << "readyok" << std::endl;
             continue;
         }
