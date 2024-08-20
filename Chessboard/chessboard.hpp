@@ -10,8 +10,10 @@
 #include "../Move/move.hpp"
 #include "../Macros/bitboard.hpp"
 #include "../Search/search.hpp"
+#include "../Evaluation/evaluation.hpp"
 
 class Move;
+class Evaluation;
 struct moves;
 
 class Chessboard {
@@ -19,14 +21,25 @@ class Chessboard {
         static void parseFEN(const char *fen);
 
         static BitBoard bitboard;
+        static long nodes;
+
+        static char asciiPieces[13];
+        static const char *unicodePieces[13]; // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
 
         static void init();
 
         static void printBitboards(uint64_t bitboard);
 
+        static void generateMoves(moves *moveList);
+        static bool makeMove(int move, int moveFlag);
+        static void printMove(int move);
+
+        static bool isSquareAttacked(int square, int side);
+
         enum { white, black, both };
         enum { rook, bishop };
         enum { P, N, B, R, Q, K, p, n, b, r, q, k };
+        enum { allMoves, capturesOnly };
         enum {
             a1, b1, c1, d1, e1, f1, g1, h1,
             a2, b2, c2, d2, e2, f2, g2, h2,
@@ -57,31 +70,22 @@ class Chessboard {
             else
                 return -1;
         }
-
-
     private:
         const int squareSize = 100;
         const int boardSize = 8;
 
         enum { wk = 1, wq = 2, bk = 4, bq = 8 };
-        enum { allMoves, capturesOnly };
 
-        static char asciiPieces[13];
-        static const char *unicodePieces[13]; // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
         static int charPieces[128]; // Inizializza tutto a 0
-        static long nodes;
         
         static inline void initCharPieces();
 
         static void printBoard();
-        static void printMove(int move);
+        
         static void printMoveList(moves *moveList);
         
-        static inline bool isSquareAttacked(int square, int side);
         static void printAttackedSquares(int side);
 
-        static inline void generateMoves(moves *moveList);
-        static inline bool makeMove(int move, int moveFlag);
         static inline int getTimeMs();
         static inline void perftDriver(int depth);
         static void perftTest(int depth);

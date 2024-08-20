@@ -46,17 +46,17 @@
 #define copyBoard()                                         \
     uint64_t bitboardsCopy[12], occupanciesCopy[3];         \
     int sideCopy, enPassantSquareCopy, castlingRightsCopy;  \
-    memcpy(bitboardsCopy, bitboard.bitboards, 96);          \
-    memcpy(occupanciesCopy, bitboard.occupancies, 24);      \
-    sideCopy = bitboard.sideToMove;                         \
-    enPassantSquareCopy = bitboard.enPassantSquare;         \
-    castlingRightsCopy = bitboard.castlingRights;           \
+    memcpy(bitboardsCopy, Chessboard::bitboard.bitboards, 96);          \
+    memcpy(occupanciesCopy, Chessboard::bitboard.occupancies, 24);      \
+    sideCopy = Chessboard::bitboard.sideToMove;                         \
+    enPassantSquareCopy = Chessboard::bitboard.enPassantSquare;         \
+    castlingRightsCopy = Chessboard::bitboard.castlingRights;           \
 
 #define takeBack()                                          \
-    memcpy(bitboard.bitboards, bitboardsCopy, 96);          \
-    memcpy(bitboard.occupancies, occupanciesCopy, 24);      \
-    bitboard.sideToMove = sideCopy;                         \
-    bitboard.enPassantSquare = enPassantSquareCopy;         \
-    bitboard.castlingRights = castlingRightsCopy;           \
+    memcpy(Chessboard::bitboard.bitboards, bitboardsCopy, 96);          \
+    memcpy(Chessboard::bitboard.occupancies, occupanciesCopy, 24);      \
+    Chessboard::bitboard.sideToMove = sideCopy;                         \
+    Chessboard::bitboard.enPassantSquare = enPassantSquareCopy;         \
+    Chessboard::bitboard.castlingRights = castlingRightsCopy;           \
 
 #endif // BITWISE_OPERATIONS_H

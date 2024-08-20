@@ -53,8 +53,18 @@ void Chessboard::init() {
 
     initCharPieces();
 
+    bool debug = false;
+
+    if (debug) {
+        parseFEN(startPosition);
+        printBoard();
+
+        Search::searchPosition(2);
+    }
+    else {
+        uciLoop();
+    }
     
-    uciLoop();
 }
 
 // Parse the FEN string
@@ -209,7 +219,7 @@ void Chessboard::printBoard() {
 
 // Print a Move (in UCI format)
 void Chessboard::printMove(int move) {
-    std::cout << squareToCoordinates[getMoveSource(move)] << squareToCoordinates[getMoveTarget(move)] << Move::promotedPieces[getMovePromoted(move)] << std::endl;
+    std::cout << squareToCoordinates[getMoveSource(move)] << squareToCoordinates[getMoveTarget(move)] << Move::promotedPieces[getMovePromoted(move)];
 }
 
 // Print Move List
@@ -251,7 +261,7 @@ void Chessboard::printMoveList(moves *moveList) {
 */
 
 // Generate all moves
-inline void Chessboard::generateMoves(moves *moveList) {
+void Chessboard::generateMoves(moves *moveList) {
     moveList->count = 0;
 
     int sourceSquare, targetSquare;
@@ -548,7 +558,7 @@ inline void Chessboard::generateMoves(moves *moveList) {
 }
 
 // Make a Move on the board
-inline bool Chessboard::makeMove(int move, int moveFlag) {
+bool Chessboard::makeMove(int move, int moveFlag) {
     // Quite Moves
     if (moveFlag == allMoves) {
         copyBoard();
@@ -650,7 +660,7 @@ inline bool Chessboard::makeMove(int move, int moveFlag) {
 }
 
 // Detect if the given square is under attack by the given color
-inline bool Chessboard::isSquareAttacked(int square, int side) {
+bool Chessboard::isSquareAttacked(int square, int side) {
     
     // Attacked by White Pawns
     if ((side == white) && (Move::pawnAttacks[black][square] & bitboard.bitboards[P])) return true; 
@@ -836,7 +846,7 @@ void Chessboard::parseGo(char *command) {
         depth = 6;
     }
 
-    Search::search(depth);
+    Search::searchPosition(depth);
 }
 
 
