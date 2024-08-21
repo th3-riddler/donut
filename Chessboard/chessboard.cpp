@@ -53,13 +53,22 @@ void Chessboard::init() {
 
     initCharPieces();
 
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {
-        parseFEN(startPosition);
+        parseFEN(trickyPosition);
         printBoard();
 
-        Search::searchPosition(2);
+        // int start = getTimeMs();
+        // Search::searchPosition(3);
+        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
+
+        moves moveList[1];
+        generateMoves(moveList);
+
+        for (int count = 0; count < moveList->count; count++) {
+            Evaluation::scoreMove(moveList->moves[count]);
+        }
     }
     else {
         uciLoop();
@@ -236,9 +245,9 @@ void Chessboard::printMoveList(moves *moveList) {
         int move = moveList->moves[moveCount];
         std::cout << "    " << squareToCoordinates[getMoveSource(move)] <<
                      squareToCoordinates[getMoveTarget(move)] << 
-                     (getMovePromoted(move) ? Move::promotedPieces[getMovePromoted(move)] : ' ')<< "     " <<
+                     (getMovePromoted(move) ? Move::promotedPieces[getMovePromoted(move)] : ' ') << "     " <<
                      unicodePieces[getMovePiece(move)] << "         " << 
-                     (getMoveCapture(move) ? 1 : 0) << "           " << 
+                     (getMoveCapture(move) != 13 ? unicodePieces[getMoveCapture(move)] : "0") << "           " << 
                      (getMoveDoublePush(move) ? 1 : 0) << "             " << 
                      (getMoveEnPassant(move) ? 1 : 0) << "           " << 
                      (getMoveCastling(move) ? 1 : 0) << std::endl;
@@ -250,21 +259,21 @@ void Chessboard::printMoveList(moves *moveList) {
 /*
                Binary Move Bits                                         Hexidecimal Constants                          
 
-        0000 0000 0000 0000 0011 1111 --> source square                 0x3F
-        0000 0000 0000 1111 1100 0000 --> target square                 0xFC0
-        0000 0000 1111 0000 0000 0000 --> piece                         0xF000
-        0000 1111 0000 0000 0000 0000 --> promoted piece                0xF0000
-        0001 0000 0000 0000 0000 0000 --> capture flag                  0x100000
-        0010 0000 0000 0000 0000 0000 --> double pawn push flag         0x200000
-        0100 0000 0000 0000 0000 0000 --> en passant flag               0x400000
-        1000 0000 0000 0000 0000 0000 --> castling flag                 0x800000
+        000 0000 0000 0000 0000 0011 1111 --> source square                 0x3F
+        000 0000 0000 0000 1111 1100 0000 --> target square                 0xFC0
+        000 0000 0000 1111 0000 0000 0000 --> piece                         0xF000
+        000 0000 1111 0000 0000 0000 0000 --> promoted piece                0xF0000
+        000 1111 0000 0000 0000 0000 0000 --> captured piece                0xF00000
+        001 0000 0000 0000 0000 0000 0000 --> double pawn push flag         0x1000000
+        010 0000 0000 0000 0000 0000 0000 --> en passant flag               0x2000000
+        100 0000 0000 0000 0000 0000 0000 --> castling flag                 0x4000000
 */
 
 // Generate all moves
 void Chessboard::generateMoves(moves *moveList) {
     moveList->count = 0;
 
-    int sourceSquare, targetSquare;
+    int sourceSquare, targetSquare, targetPiece, startPiece, endPiece;
 
     uint64_t bitboardCopy, attacks;
 
@@ -282,18 +291,18 @@ void Chessboard::generateMoves(moves *moveList) {
                     if (!(targetSquare > h8) && !GET_BIT(bitboard.occupancies[both], targetSquare)) {
                         // Pawn Promotion
                         if (sourceSquare >= a7 && sourceSquare <= h7) {
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, Q, 0, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, R, 0, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, B, 0, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, N, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, Q, 13, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, R, 13, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, B, 13, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, N, 13, 0, 0, 0));
                         }
                         else {
                             // One square pawn advance
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 13, 0, 0, 0));
 
                             // Double square pawn advance
                             if ((sourceSquare >= a2 && sourceSquare <= h2) && !GET_BIT(bitboard.occupancies[both], targetSquare + 8)) {
-                                Move::addMove(moveList, encodeMove(sourceSquare, targetSquare + 8, piece, 0, 0, 1, 0, 0));
+                                Move::addMove(moveList, encodeMove(sourceSquare, targetSquare + 8, piece, 0, 13, 1, 0, 0));
                             }
                         }
                     }
@@ -304,15 +313,22 @@ void Chessboard::generateMoves(moves *moveList) {
                     while (attacks) {
                         targetSquare = getLSBIndex(attacks);
 
+                        for (int bbPiece = p; bbPiece <= k; bbPiece++) {
+                            if (GET_BIT(Chessboard::bitboard.bitboards[bbPiece], targetSquare)) {
+                                targetPiece = bbPiece;
+                                break;
+                            }
+                        }
+
                         // Pawn Promotion-Capture
                         if (sourceSquare >= a7 && sourceSquare <= h7) {
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, Q, 1, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, R, 1, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, B, 1, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, N, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, Q, targetPiece, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, R, targetPiece, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, B, targetPiece, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, N, targetPiece, 0, 0, 0));
                         }
                         else {
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, targetPiece, 0, 0, 0));
                         }
 
                         CLEAR_BIT(attacks, targetSquare);
@@ -324,7 +340,7 @@ void Chessboard::generateMoves(moves *moveList) {
 
                         if (enPassantAttacks) {
                             int enPassantTarget = getLSBIndex(enPassantAttacks);
-                            Move::addMove(moveList, encodeMove(sourceSquare, enPassantTarget, piece, 0, 1, 0, 1, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, enPassantTarget, piece, 0, p, 0, 1, 0));
                         }
                     }
 
@@ -341,7 +357,7 @@ void Chessboard::generateMoves(moves *moveList) {
                     if (!GET_BIT(bitboard.occupancies[both], f1) && !GET_BIT(bitboard.occupancies[both], g1)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e1, black) && !isSquareAttacked(f1, black)) {
-                            Move::addMove(moveList, encodeMove(e1, g1, piece, 0, 0, 0, 0, 1));
+                            Move::addMove(moveList, encodeMove(e1, g1, piece, 0, 13, 0, 0, 1));
                         }
                     }
                 }
@@ -352,7 +368,7 @@ void Chessboard::generateMoves(moves *moveList) {
                     if (!GET_BIT(bitboard.occupancies[both], d1) && !GET_BIT(bitboard.occupancies[both], c1) && !GET_BIT(bitboard.occupancies[both], b1)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e1, black) && !isSquareAttacked(d1, black)) {
-                            Move::addMove(moveList, encodeMove(e1, c1, piece, 0, 0, 0, 0, 1));
+                            Move::addMove(moveList, encodeMove(e1, c1, piece, 0, 13, 0, 0, 1));
                         }
                     }
                 }
@@ -368,18 +384,18 @@ void Chessboard::generateMoves(moves *moveList) {
                     if (!(targetSquare < a1) && !GET_BIT(bitboard.occupancies[both], targetSquare)) {
                         // Pawn Promotion
                         if (sourceSquare >= a2 && sourceSquare <= h2) {
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, q, 0, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, r, 0, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, b, 0, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, n, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, q, 13, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, r, 13, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, b, 13, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, n, 13, 0, 0, 0));
                         }
                         else {
                             // One square pawn advance
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 13, 0, 0, 0));
 
                             // Double square pawn advance
                             if ((sourceSquare >= a7 && sourceSquare <= h7) && !GET_BIT(bitboard.occupancies[both], targetSquare - 8)) {
-                                Move::addMove(moveList, encodeMove(sourceSquare, targetSquare - 8, piece, 0, 0, 1, 0, 0));
+                                Move::addMove(moveList, encodeMove(sourceSquare, targetSquare - 8, piece, 0, 13, 1, 0, 0));
                             }
                         }
                     }
@@ -390,15 +406,22 @@ void Chessboard::generateMoves(moves *moveList) {
                     while (attacks) {
                         targetSquare = getLSBIndex(attacks);
 
+                        for (int bbPiece = P; bbPiece <= K; bbPiece++) {
+                            if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
+                                targetPiece = bbPiece;
+                                break;
+                            }
+                        }
+
                         // Pawn Promotion-Capture
                         if (sourceSquare >= a2 && sourceSquare <= h2) {
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, q, 1, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, r, 1, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, b, 1, 0, 0, 0));
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, n, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, q, targetPiece, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, r, targetPiece, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, b, targetPiece, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, n, targetPiece, 0, 0, 0));
                         }
                         else {
-                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, targetPiece, 0, 0, 0));
                         }
 
                         CLEAR_BIT(attacks, targetSquare);
@@ -410,7 +433,7 @@ void Chessboard::generateMoves(moves *moveList) {
 
                         if (enPassantAttacks) {
                             int enPassantTarget = getLSBIndex(enPassantAttacks);
-                            Move::addMove(moveList, encodeMove(sourceSquare, enPassantTarget, piece, 0, 1, 0, 1, 0));
+                            Move::addMove(moveList, encodeMove(sourceSquare, enPassantTarget, piece, 0, P, 0, 1, 0));
                         }
                     }
 
@@ -427,7 +450,7 @@ void Chessboard::generateMoves(moves *moveList) {
                     if (!GET_BIT(bitboard.occupancies[both], f8) && !GET_BIT(bitboard.occupancies[both], g8)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e8, white) && !isSquareAttacked(f8, white)) {
-                            Move::addMove(moveList, encodeMove(e8, g8, piece, 0, 0, 0, 0, 1));
+                            Move::addMove(moveList, encodeMove(e8, g8, piece, 0, 13, 0, 0, 1));
                         }
                     }
                 }
@@ -438,7 +461,7 @@ void Chessboard::generateMoves(moves *moveList) {
                     if (!GET_BIT(bitboard.occupancies[both], d8) && !GET_BIT(bitboard.occupancies[both], c8) && !GET_BIT(bitboard.occupancies[both], b8)) {
                         // Check if the squares the king moves through are not under attack
                         if (!isSquareAttacked(e8, white) && !isSquareAttacked(d8, white)) {
-                            Move::addMove(moveList, encodeMove(e8, c8, piece, 0, 0, 0, 0, 1));
+                            Move::addMove(moveList, encodeMove(e8, c8, piece, 0, 13, 0, 0, 1));
                         }
                     }
                 }
@@ -447,6 +470,10 @@ void Chessboard::generateMoves(moves *moveList) {
 
         // Generate Knight Moves
         if ((bitboard.sideToMove == white) ? piece == N : piece == n) {
+            
+            if (bitboard.sideToMove == white) { startPiece = p; endPiece = k; }
+            else { startPiece = P; endPiece = K; }
+            
             while (bitboardCopy) {
                 sourceSquare = getLSBIndex(bitboardCopy);
 
@@ -455,10 +482,17 @@ void Chessboard::generateMoves(moves *moveList) {
                 while (attacks) {
                     targetSquare = getLSBIndex(attacks);
 
+                    for (int bbPiece = startPiece; bbPiece <= endPiece; bbPiece++) {
+                        if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
+                            targetPiece = bbPiece;
+                            break;
+                        }
+                    }
+
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 13, 0, 0, 0));
                     else
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, targetPiece, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -469,6 +503,10 @@ void Chessboard::generateMoves(moves *moveList) {
 
         // Generate Bishop Moves
         if ((bitboard.sideToMove == white) ? piece == B : piece == b) {
+
+            if (bitboard.sideToMove == white) { startPiece = p; endPiece = k; }
+            else { startPiece = P; endPiece = K; }
+
             while (bitboardCopy) {
                 sourceSquare = getLSBIndex(bitboardCopy);
 
@@ -477,10 +515,17 @@ void Chessboard::generateMoves(moves *moveList) {
                 while (attacks) {
                     targetSquare = getLSBIndex(attacks);
 
+                    for (int bbPiece = startPiece; bbPiece <= endPiece; bbPiece++) {
+                        if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
+                            targetPiece = bbPiece;
+                            break;
+                        }
+                    }
+
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 13, 0, 0, 0));
                     else
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, targetPiece, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -491,6 +536,10 @@ void Chessboard::generateMoves(moves *moveList) {
 
         // Generate Rook Moves
         if ((bitboard.sideToMove == white) ? piece == R : piece == r) {
+
+            if (bitboard.sideToMove == white) { startPiece = Chessboard::p; endPiece = Chessboard::k; }
+            else { startPiece = Chessboard::P; endPiece = Chessboard::K; }
+            
             while (bitboardCopy) {
                 sourceSquare = getLSBIndex(bitboardCopy);
 
@@ -499,10 +548,17 @@ void Chessboard::generateMoves(moves *moveList) {
                 while (attacks) {
                     targetSquare = getLSBIndex(attacks);
 
+                    for (int bbPiece = startPiece; bbPiece <= endPiece; bbPiece++) {
+                        if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
+                            targetPiece = bbPiece;
+                            break;
+                        }
+                    }
+
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 13, 0, 0, 0));
                     else
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, targetPiece, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -513,6 +569,10 @@ void Chessboard::generateMoves(moves *moveList) {
 
         // Generate Queen Moves
         if ((bitboard.sideToMove == white) ? piece == Q : piece == q) {
+
+            if (bitboard.sideToMove == white) { startPiece = p; endPiece = k; }
+            else { startPiece = P; endPiece = K; }
+
             while (bitboardCopy) {
                 sourceSquare = getLSBIndex(bitboardCopy);
 
@@ -521,10 +581,17 @@ void Chessboard::generateMoves(moves *moveList) {
                 while (attacks) {
                     targetSquare = getLSBIndex(attacks);
 
+                    for (int bbPiece = startPiece; bbPiece <= endPiece; bbPiece++) {
+                        if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
+                            targetPiece = bbPiece;
+                            break;
+                        }
+                    }
+
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 13, 0, 0, 0));
                     else
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, targetPiece, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -535,6 +602,10 @@ void Chessboard::generateMoves(moves *moveList) {
 
         // Generate King Moves
         if ((bitboard.sideToMove == white) ? piece == K : piece == k) {
+
+            if (bitboard.sideToMove == white) { startPiece = p; endPiece = k; }
+            else { startPiece = P; endPiece = K; }
+
             while (bitboardCopy) {
                 sourceSquare = getLSBIndex(bitboardCopy);
 
@@ -543,10 +614,17 @@ void Chessboard::generateMoves(moves *moveList) {
                 while (attacks) {
                     targetSquare = getLSBIndex(attacks);
 
+                    for (int bbPiece = startPiece; bbPiece <= endPiece; bbPiece++) {
+                        if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
+                            targetPiece = bbPiece;
+                            break;
+                        }
+                    }
+
                     if (!GET_BIT(((bitboard.sideToMove == white) ? bitboard.occupancies[black] : bitboard.occupancies[white]), targetSquare))
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 0, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 13, 0, 0, 0));
                     else
-                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, 1, 0, 0, 0));
+                        Move::addMove(moveList, encodeMove(sourceSquare, targetSquare, piece, 0, targetPiece, 0, 0, 0));
 
                     CLEAR_BIT(attacks, targetSquare);
                 }
@@ -571,7 +649,7 @@ int Chessboard::makeMove(int move, int moveFlag) {
         CLEAR_BIT(bitboard.bitboards[piece], sourceSquare);
         SET_BIT(bitboard.bitboards[piece], targetSquare);
 
-        if (getMoveCapture(move)) {
+        if (getMoveCapture(move) != 13) {
             int startPiece, endPiece;
 
             if (bitboard.sideToMove == white) {
@@ -649,7 +727,7 @@ int Chessboard::makeMove(int move, int moveFlag) {
         }
     }
     else { // Capture Moves
-        if (getMoveCapture(move)) {
+        if (getMoveCapture(move) != 13) {
             return makeMove(move, allMoves);
         }
         else {

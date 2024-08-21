@@ -7,16 +7,13 @@ int Search::bestMove;
 
 
 int Search::quiescenceSearch(int alpha, int beta) {
+
+    Chessboard::nodes++;
     
     int evaluation = Evaluation::evaluate();
 
-    // std::cout << "Alpha: " << alpha << std::endl;
-    // std::cout << "Beta: " << beta << std::endl;
-    // std::cout << "Evaluation: " << evaluation << std::endl;    
-    // std::cout << std::endl;
-
     // Fail hard beta-cutoff
-    if (evaluation >= beta) { // 0 -5 0 -5 0 -10
+    if (evaluation >= beta) {
         return beta;
     }
 
@@ -37,10 +34,6 @@ int Search::quiescenceSearch(int alpha, int beta) {
             ply--;
             continue;
         }
-
-        std::cout << "Quiescence Move: ";
-        Chessboard::printMove(moveList->moves[count]);
-        std::cout << std::endl; 
 
         int score = -quiescenceSearch(-beta, -alpha);
 

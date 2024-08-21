@@ -11,8 +11,10 @@ class Evaluation {
         static const int queenScore[64];
         static const int kingScore[64];
         static const int mirrorPieceScore[128];
+        static const int mvvLva[12][12];
 
         static int evaluate();
+        static int scoreMove(int move);
 };
 
 

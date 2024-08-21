@@ -85,6 +85,33 @@ const int Evaluation::mirrorPieceScore[128] = {
     Chessboard::a1, Chessboard::b1, Chessboard::c1, Chessboard::d1, Chessboard::e1, Chessboard::f1, Chessboard::g1, Chessboard::h1
 };
 
+const int Evaluation::mvvLva[12][12] = {
+    105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605,
+	104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604,
+	103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603,
+	102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602,
+	101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601,
+	100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600,
+
+	105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605,
+	104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604,
+	103, 203, 303, 403, 503, 603,  103, 203, 303, 403, 503, 603,
+	102, 202, 302, 402, 502, 602,  102, 202, 302, 402, 502, 602,
+	101, 201, 301, 401, 501, 601,  101, 201, 301, 401, 501, 601,
+	100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600
+};
+
+int Evaluation::scoreMove(int move) { // TO IMPROVE: encode the captured piece in the move
+    if(getMoveCapture(move) != 13) {
+        Chessboard::printMove(move);
+        std::cout << std::endl;
+        std::cout << "Source Piece: " << Chessboard::asciiPieces[getMovePiece(move)] << std::endl;
+        std::cout << "Target Piece: " << Chessboard::asciiPieces[getMoveCapture(move)] << std::endl << std::endl;
+        //return mvvLva[getMovePiece(move)][getMoveCapture(move)];
+    }
+    return 0;
+}
+
 
 int Evaluation::evaluate() {
     int score = 0;

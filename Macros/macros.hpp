@@ -25,7 +25,7 @@
 #define cmkPosition (const char*)"r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9"
 
 #define encodeMove(source, target, piece, promoted, capture, doublePush, enPassant, castling) \
-    ((source) | ((target) << 6) | ((piece) << 12) | ((promoted) << 16) | ((capture) << 20) | ((doublePush) << 21) | ((enPassant) << 22) | ((castling) << 23))
+    ((source) | ((target) << 6) | ((piece) << 12) | ((promoted) << 16) | ((capture) << 20) | ((doublePush) << 25) | ((enPassant) << 26) | ((castling) << 27))
 
 #define getMoveSource(move) ((move) & 0x3F)
 
@@ -35,24 +35,24 @@
 
 #define getMovePromoted(move) ((move & 0xF0000) >> 16)
 
-#define getMoveCapture(move) (move & 0x100000)
+#define getMoveCapture(move) ((move & 0xF00000) >> 20)
 
-#define getMoveDoublePush(move) (move & 0x200000)
+#define getMoveDoublePush(move) (move & 0x1000000)
 
-#define getMoveEnPassant(move) (move & 0x400000)
+#define getMoveEnPassant(move) (move & 0x2000000)
 
-#define getMoveCastling(move) (move & 0x800000)
+#define getMoveCastling(move) (move & 0x4000000)
 
-#define copyBoard()                                         \
-    uint64_t bitboardsCopy[12], occupanciesCopy[3];         \
-    int sideCopy, enPassantSquareCopy, castlingRightsCopy;  \
+#define copyBoard()                                                     \
+    uint64_t bitboardsCopy[12], occupanciesCopy[3];                     \
+    int sideCopy, enPassantSquareCopy, castlingRightsCopy;              \
     memcpy(bitboardsCopy, Chessboard::bitboard.bitboards, 96);          \
     memcpy(occupanciesCopy, Chessboard::bitboard.occupancies, 24);      \
     sideCopy = Chessboard::bitboard.sideToMove;                         \
     enPassantSquareCopy = Chessboard::bitboard.enPassantSquare;         \
     castlingRightsCopy = Chessboard::bitboard.castlingRights;           \
 
-#define takeBack()                                          \
+#define takeBack()                                                      \
     memcpy(Chessboard::bitboard.bitboards, bitboardsCopy, 96);          \
     memcpy(Chessboard::bitboard.occupancies, occupanciesCopy, 24);      \
     Chessboard::bitboard.sideToMove = sideCopy;                         \
