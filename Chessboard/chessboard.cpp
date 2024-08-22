@@ -53,16 +53,16 @@ void Chessboard::init() {
 
     initCharPieces();
 
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {
         //parseFEN("8/1b4br/2qk1n2/3p4/4PPPP/2p5/4Q1B1/3RK2R w KQ - 1 33");
         parseFEN(trickyPosition);
         printBoard();
 
-        int start = getTimeMs();
-        Search::searchPosition(5);
-        std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
+        // int start = getTimeMs();
+        Search::searchPosition(6);
+        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
 
         // moves moveList[1];
         // generateMoves(moveList);
@@ -73,7 +73,8 @@ void Chessboard::init() {
         // Search::historyMoves[getMovePiece(moveList->moves[0])][getMoveTarget(moveList->moves[0])] = 35;
 
         // Move::printMoveScores(moveList);
-        // Move::sortMoves(moveList);
+        // Search::searchPosition(6);
+        // //Move::sortMoves(moveList);
         // std::cout << std::endl;
         // Move::printMoveScores(moveList);
     }

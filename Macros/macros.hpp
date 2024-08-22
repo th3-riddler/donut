@@ -59,4 +59,6 @@
     Chessboard::bitboard.enPassantSquare = enPassantSquareCopy;         \
     Chessboard::bitboard.castlingRights = castlingRightsCopy;           \
 
+#define maxPly 64
+
 #endif // BITWISE_OPERATIONS_H

@@ -8,7 +8,20 @@ int Search::killerMoves[2][64];
 int Search::historyMoves[12][64];
 int Search::pvLength[64];
 int Search::pvTable[64][64];
+bool Search::followPv;
+bool Search::scorePv;
 
+
+inline void Search::enablePvScore(moves *moveList) {
+    followPv = false;
+
+    for (int count = 0; count < moveList->count; count++) {
+        if (pvTable[0][ply] == moveList->moves[count]) {
+            scorePv = true;
+            followPv = true;
+        }
+    }
+}
 
 int Search::quiescenceSearch(int alpha, int beta) {
 
@@ -68,18 +81,27 @@ int Search::negamax(int alpha, int beta, int depth) { // position startpos moves
         return quiescenceSearch(alpha, beta);
     }
 
+    if (ply > maxPly - 1) {
+        return Evaluation::evaluate();
+    }
+
     Chessboard::nodes++;
 
     int inCheck = Chessboard::isSquareAttacked(Chessboard::getLSBIndex((Chessboard::bitboard.sideToMove == Chessboard::white ? Chessboard::bitboard.bitboards[Chessboard::K] : Chessboard::bitboard.bitboards[Chessboard::k])), Chessboard::bitboard.sideToMove ^ 1);
-    
+
     if (inCheck) {
         depth++;
-}
+    }
 
     int legalMoves = 0;
 
     moves moveList[1];
     Chessboard::generateMoves(moveList);
+
+    // If i'm following the PV line
+    if (followPv) {
+        enablePvScore(moveList);
+    }
 
     Move::sortMoves(moveList);
 
@@ -138,12 +160,54 @@ int Search::negamax(int alpha, int beta, int depth) { // position startpos moves
     return alpha;
 }
 
+// Iterative Deepening
+int Search::iterativeDeepening(int depth) {
+    int score = 0;
+    for (int currentDepth = 1; currentDepth <= depth; currentDepth++) {
+        Chessboard::nodes = 0;
+        followPv = true;
+
+        score = negamax(-50000, 50000, currentDepth);
+
+        std::cout << "info score cp " << score << " depth " << currentDepth << " nodes " << Chessboard::nodes << " pv ";
+
+        for (int count = 0; count < pvLength[0]; count++) {
+            Move::printMove(pvTable[0][count]);
+            std::cout << " ";
+        }
+        std::cout << std::endl;
+    }
+    return score;
+}
+
+
 void Search::searchPosition(int depth) {
-    std::cout << "Depth: " << depth << std::endl;
-    int score = negamax(-50000, 50000, depth);
+    Chessboard::nodes = 0;
+    followPv = false;
+    scorePv = false;
+
+    memset(killerMoves, 0, sizeof(killerMoves));
+    memset(historyMoves, 0, sizeof(historyMoves));
+    memset(pvTable, 0, sizeof(pvTable));
+    memset(pvLength, 0, sizeof(pvLength));
+
+    int score = iterativeDeepening(depth);
+
+
+
+    // ONLY FOR COMPARISON PURPOSES
+    Chessboard::nodes = 0;
+    followPv = false;
+    scorePv = false;
+
+    memset(killerMoves, 0, sizeof(killerMoves));
+    memset(historyMoves, 0, sizeof(historyMoves));
+    memset(pvTable, 0, sizeof(pvTable));
+    memset(pvLength, 0, sizeof(pvLength));
+
+    score = negamax(-50000, 50000, depth);
 
     std::cout << "info score cp " << score << " depth " << depth << " nodes " << Chessboard::nodes << " pv ";
-
     for (int count = 0; count < pvLength[0]; count++) {
         Move::printMove(pvTable[0][count]);
         std::cout << " ";

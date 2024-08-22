@@ -101,7 +101,18 @@ const int Evaluation::mvvLva[12][12] = {
 	100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600
 };
 
-int Evaluation::scoreMove(int move) { // TO IMPROVE: encode the captured piece in the move
+int Evaluation::scoreMove(int move) {
+    if (Search::scorePv) {
+        if (Search::pvTable[0][Search::ply] == move) {
+            Search::scorePv = false;
+
+            std::cout << "Current PV Move: ";
+            Move::printMove(move);
+            std::cout << " ply: " << Search::ply << std::endl;
+            return 20000;
+        }
+    }
+
     if(getMoveCapture(move) != 13) {
         return mvvLva[getMovePiece(move)][getMoveCapture(move)] + 10000;
     }
