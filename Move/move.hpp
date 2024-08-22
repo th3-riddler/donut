@@ -14,11 +14,15 @@ struct moves {
 
 class Move {
     public:
-        explicit Move();
-
         static uint64_t getBishopAttacks(int square, uint64_t occupancy);
         static uint64_t getRookAttacks(int square, uint64_t occupancy);
         static uint64_t getQueenAttacks(int square, uint64_t occupancy);
+
+        static void printMoveList(moves *moveList);
+        static void printMoveScores(moves *moveList);
+        static void printMove(int move);
+        static void printLegalMoves(moves *moveList);
+        static void sortMoves(moves *moveList);
 
         static void initMagicNumbers();
 
@@ -60,7 +64,6 @@ class Move {
         static void initLeapersAttacks();
         static void initSlidingAttacks(int bishop);
         static void initPromotedPieces();
-
 };
 
 

@@ -53,22 +53,23 @@ void Chessboard::init() {
 
     initCharPieces();
 
-    bool debug = true;
+    bool debug = false;
 
     if (debug) {
-        parseFEN(trickyPosition);
+        //parseFEN("8/1b4br/2qk1n2/3p4/4PPPP/2p5/4Q1B1/3RK2R w KQ - 1 33");
+        parseFEN("2kr3r/pbp1qpbp/1p2p3/1P1p2p1/2nP4/2BQPNP1/P1P2PBP/2KR3R w - - 10 17");
         printBoard();
 
-        // int start = getTimeMs();
-        // Search::searchPosition(3);
-        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
+        int start = getTimeMs();
+        Search::searchPosition(4);
+        std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
 
-        moves moveList[1];
-        generateMoves(moveList);
+        // moves moveList[1];
+        // generateMoves(moveList);
 
-        for (int count = 0; count < moveList->count; count++) {
-            Evaluation::scoreMove(moveList->moves[count]);
-        }
+        // Move::printMoveList(moveList);
+        // Move::sortMoves(moveList);
+        // Move::printMoveList(moveList);
     }
     else {
         uciLoop();
@@ -226,35 +227,6 @@ void Chessboard::printBoard() {
     std::cout << std::endl;
 }
 
-// Print a Move (in UCI format)
-void Chessboard::printMove(int move) {
-    std::cout << squareToCoordinates[getMoveSource(move)] << squareToCoordinates[getMoveTarget(move)] << Move::promotedPieces[getMovePromoted(move)];
-}
-
-// Print Move List
-void Chessboard::printMoveList(moves *moveList) {
-
-    if (!moveList->count) {
-        std::cout << "No moves found!" << std::endl;
-        return;
-    }
-
-    std::cout << "\n    move    piece    capture    doublePush    enPassant    castling\n" << std::endl;
-
-    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
-        int move = moveList->moves[moveCount];
-        std::cout << "    " << squareToCoordinates[getMoveSource(move)] <<
-                     squareToCoordinates[getMoveTarget(move)] << 
-                     (getMovePromoted(move) ? Move::promotedPieces[getMovePromoted(move)] : ' ') << "     " <<
-                     unicodePieces[getMovePiece(move)] << "         " << 
-                     (getMoveCapture(move) != 13 ? unicodePieces[getMoveCapture(move)] : "0") << "           " << 
-                     (getMoveDoublePush(move) ? 1 : 0) << "             " << 
-                     (getMoveEnPassant(move) ? 1 : 0) << "           " << 
-                     (getMoveCastling(move) ? 1 : 0) << std::endl;
-    }
-    std::cout << "\n\n  Total moves: " << moveList->count << std::endl;
-}
-
 
 /*
                Binary Move Bits                                         Hexidecimal Constants                          
@@ -273,7 +245,7 @@ void Chessboard::printMoveList(moves *moveList) {
 void Chessboard::generateMoves(moves *moveList) {
     moveList->count = 0;
 
-    int sourceSquare, targetSquare, targetPiece, startPiece, endPiece;
+    int sourceSquare, targetSquare, targetPiece = -1, startPiece, endPiece;
 
     uint64_t bitboardCopy, attacks;
 
@@ -899,9 +871,11 @@ void Chessboard::parsePosition(char *command) {
 
         while(*currentChar) {
             int move = parseMove(currentChar);
+
             if (move == 0) {
                 break;
             }
+
             makeMove(move, allMoves);
 
             while (*currentChar && *currentChar != ' ') {

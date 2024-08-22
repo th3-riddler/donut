@@ -25,6 +25,8 @@ int Search::quiescenceSearch(int alpha, int beta) {
     moves moveList[1];
     Chessboard::generateMoves(moveList);
 
+    Move::sortMoves(moveList);
+
     for (int count = 0; count < moveList->count; count++) {
         copyBoard();
 
@@ -62,13 +64,20 @@ int Search::negamax(int alpha, int beta, int depth) { // position startpos moves
     Chessboard::nodes++;
 
     int inCheck = Chessboard::isSquareAttacked(Chessboard::getLSBIndex((Chessboard::bitboard.sideToMove == Chessboard::white ? Chessboard::bitboard.bitboards[Chessboard::K] : Chessboard::bitboard.bitboards[Chessboard::k])), Chessboard::bitboard.sideToMove ^ 1);
+    
+    if (inCheck) {
+        depth++;
+}
+
     int legalMoves = 0;
 
-    int bestSoFar;
+    int bestSoFar = 0;
     int oldAlpha = alpha;
 
     moves moveList[1];
     Chessboard::generateMoves(moveList);
+
+    Move::sortMoves(moveList);
 
     for (int count = 0; count < moveList->count; count++) {
         copyBoard();
@@ -126,7 +135,7 @@ void Search::searchPosition(int depth) {
         std::cout << "info score cp " << score << " depth " << depth << " nodes " << Chessboard::nodes << std::endl;
 
         std::cout << "bestmove ";
-        Chessboard::printMove(bestMove);
+        Move::printMove(bestMove);
         std::cout << std::endl;
     }
 }

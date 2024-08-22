@@ -103,11 +103,7 @@ const int Evaluation::mvvLva[12][12] = {
 
 int Evaluation::scoreMove(int move) { // TO IMPROVE: encode the captured piece in the move
     if(getMoveCapture(move) != 13) {
-        Chessboard::printMove(move);
-        std::cout << std::endl;
-        std::cout << "Source Piece: " << Chessboard::asciiPieces[getMovePiece(move)] << std::endl;
-        std::cout << "Target Piece: " << Chessboard::asciiPieces[getMoveCapture(move)] << std::endl << std::endl;
-        //return mvvLva[getMovePiece(move)][getMoveCapture(move)];
+        return mvvLva[getMovePiece(move)][getMoveCapture(move)];
     }
     return 0;
 }

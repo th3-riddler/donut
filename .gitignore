@@ -1,4 +1,5 @@
 chessboard
 .vscode/
 Macros/precompiled.hpp.gch
-reduxinator
+reduxinator*
+engineVersions/

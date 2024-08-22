@@ -587,3 +587,65 @@ uint64_t Move::findMagicNumber(int square, int relevantBits, int bishop) {
     }
 */
 
+// Print Move List
+void Move::printMoveList(moves *moveList) {
+
+    if (!moveList->count) {
+        std::cout << "No moves found!" << std::endl;
+        return;
+    }
+
+    std::cout << "\n    move    piece    capture    doublePush    enPassant    castling\n" << std::endl;
+
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
+        int move = moveList->moves[moveCount];
+        std::cout << "    " << Chessboard::squareToCoordinates[getMoveSource(move)] <<
+                               Chessboard::squareToCoordinates[getMoveTarget(move)] << 
+                               (getMovePromoted(move) ? promotedPieces[getMovePromoted(move)] : ' ') << "     " <<
+                               Chessboard::unicodePieces[getMovePiece(move)] << "         " << 
+                               (getMoveCapture(move) != 13 ? Chessboard::unicodePieces[getMoveCapture(move)] : "0") << "           " << 
+                               (getMoveDoublePush(move) ? 1 : 0) << "             " << 
+                               (getMoveEnPassant(move) ? 1 : 0) << "           " << 
+                               (getMoveCastling(move) ? 1 : 0) << std::endl;
+    }
+    std::cout << "\n\n  Total moves: " << moveList->count << std::endl;
+}
+
+// Print a Move (in UCI format)
+void Move::printMove(int move) {
+    std::cout << Chessboard::squareToCoordinates[getMoveSource(move)] << Chessboard::squareToCoordinates[getMoveTarget(move)] << promotedPieces[getMovePromoted(move)];
+}
+
+// Print the score of each move
+void Move::printMoveScores(moves *moveList) {
+    for (int count = 0; count < moveList->count; count++) {
+        printMove(moveList->moves[count]);
+        std::cout << "   score: " << Evaluation::scoreMove(moveList->moves[count]) << std::endl;
+    }
+}
+
+void Move::printLegalMoves(moves *moveList) {
+    for (int count = 0; count < moveList->count; count++) {
+        copyBoard();
+        if(Chessboard::makeMove(moveList->moves[count], Chessboard::allMoves) == 0) {
+            takeBack();
+            continue;
+        }
+        takeBack();
+        printMove(moveList->moves[count]);
+        std::cout << std::endl;
+    }
+}
+
+// Sort Moves
+void Move::sortMoves(moves *moveList) {
+    for (int count = 0; count < moveList->count; count++) {
+        for (int nextCount = count + 1; nextCount < moveList->count; nextCount++) {
+            if(Evaluation::scoreMove(moveList->moves[nextCount]) > Evaluation::scoreMove(moveList->moves[count])) {
+                int tempMove = moveList->moves[count];
+                moveList->moves[count] = moveList->moves[nextCount];
+                moveList->moves[nextCount] = tempMove;
+            }
+        }
+    }
+}

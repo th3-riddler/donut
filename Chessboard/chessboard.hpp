@@ -32,7 +32,6 @@ class Chessboard {
 
         static void generateMoves(moves *moveList);
         static int makeMove(int move, int moveFlag);
-        static void printMove(int move);
 
         static bool isSquareAttacked(int square, int side);
 
@@ -81,8 +80,6 @@ class Chessboard {
         static inline void initCharPieces();
 
         static void printBoard();
-        
-        static void printMoveList(moves *moveList);
         
         static void printAttackedSquares(int side);
 

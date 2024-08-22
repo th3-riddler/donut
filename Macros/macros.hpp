@@ -25,7 +25,7 @@
 #define cmkPosition (const char*)"r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9"
 
 #define encodeMove(source, target, piece, promoted, capture, doublePush, enPassant, castling) \
-    ((source) | ((target) << 6) | ((piece) << 12) | ((promoted) << 16) | ((capture) << 20) | ((doublePush) << 25) | ((enPassant) << 26) | ((castling) << 27))
+    ((source) | ((target) << 6) | ((piece) << 12) | ((promoted) << 16) | ((capture) << 20) | ((doublePush) << 24) | ((enPassant) << 25) | ((castling) << 26))
 
 #define getMoveSource(move) ((move) & 0x3F)
 
