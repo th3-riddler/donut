@@ -14,7 +14,11 @@ class Search {
         static void searchPosition(int depth);
 
         static int ply;
-        static int bestMove;
+
+        static int killerMoves[2][64];
+        static int historyMoves[12][64];
+        static int pvLength[64];
+        static int pvTable[64][64];
 };
 
 

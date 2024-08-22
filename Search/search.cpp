@@ -3,7 +3,11 @@
 #include "search.hpp"
 
 int Search::ply;
-int Search::bestMove;
+
+int Search::killerMoves[2][64];
+int Search::historyMoves[12][64];
+int Search::pvLength[64];
+int Search::pvTable[64][64];
 
 
 int Search::quiescenceSearch(int alpha, int beta) {
@@ -57,6 +61,9 @@ int Search::quiescenceSearch(int alpha, int beta) {
 }
 
 int Search::negamax(int alpha, int beta, int depth) { // position startpos moves d2d4 d7d5 e2e4 d5e4 b1c3
+
+    pvLength[ply] = ply;
+
     if (depth == 0) {
         return quiescenceSearch(alpha, beta);
     }
@@ -70,9 +77,6 @@ int Search::negamax(int alpha, int beta, int depth) { // position startpos moves
 }
 
     int legalMoves = 0;
-
-    int bestSoFar = 0;
-    int oldAlpha = alpha;
 
     moves moveList[1];
     Chessboard::generateMoves(moveList);
@@ -99,14 +103,25 @@ int Search::negamax(int alpha, int beta, int depth) { // position startpos moves
 
         // Fail hard beta-cutoff
         if (score >= beta) {
+            if (getMoveCapture(moveList->moves[count]) == 13) {
+                killerMoves[1][ply] = killerMoves[0][ply];
+                killerMoves[0][ply] = moveList->moves[count];
+            }
             return beta;
         }
 
         if (score > alpha) {
-            alpha = score;
-            if (ply == 0) {
-                bestSoFar = moveList->moves[count];
+            if (getMoveCapture(moveList->moves[count]) == 13) {
+                historyMoves[getMovePiece(moveList->moves[count])][getMoveTarget(moveList->moves[count])] += depth;
             }
+
+            alpha = score;
+
+            pvTable[ply][ply] = moveList->moves[count];
+            for (int nextPly = ply + 1; nextPly < pvLength[ply + 1]; nextPly++) {
+                pvTable[ply][nextPly] = pvTable[ply + 1][nextPly]; // Copy the PV line from the next ply to the current ply
+            }
+            pvLength[ply] = pvLength[ply + 1];
         }
     }
 
@@ -119,10 +134,6 @@ int Search::negamax(int alpha, int beta, int depth) { // position startpos moves
         }
     }
 
-    if (oldAlpha != alpha) {
-        bestMove = bestSoFar;
-    }
-
     // Node fails low
     return alpha;
 }
@@ -131,11 +142,15 @@ void Search::searchPosition(int depth) {
     std::cout << "Depth: " << depth << std::endl;
     int score = negamax(-50000, 50000, depth);
 
-    if (bestMove) {
-        std::cout << "info score cp " << score << " depth " << depth << " nodes " << Chessboard::nodes << std::endl;
+    std::cout << "info score cp " << score << " depth " << depth << " nodes " << Chessboard::nodes << " pv ";
 
-        std::cout << "bestmove ";
-        Move::printMove(bestMove);
-        std::cout << std::endl;
+    for (int count = 0; count < pvLength[0]; count++) {
+        Move::printMove(pvTable[0][count]);
+        std::cout << " ";
     }
+    std::cout << std::endl;
+
+    std::cout << "bestmove ";
+    Move::printMove(pvTable[0][0]);
+    std::cout << std::endl;
 }

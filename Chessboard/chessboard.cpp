@@ -57,19 +57,25 @@ void Chessboard::init() {
 
     if (debug) {
         //parseFEN("8/1b4br/2qk1n2/3p4/4PPPP/2p5/4Q1B1/3RK2R w KQ - 1 33");
-        parseFEN("2kr3r/pbp1qpbp/1p2p3/1P1p2p1/2nP4/2BQPNP1/P1P2PBP/2KR3R w - - 10 17");
+        parseFEN(trickyPosition);
         printBoard();
 
         int start = getTimeMs();
-        Search::searchPosition(4);
+        Search::searchPosition(5);
         std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
 
         // moves moveList[1];
         // generateMoves(moveList);
 
-        // Move::printMoveList(moveList);
+        // Search::killerMoves[0][Search::ply] = moveList->moves[3];
+        // Search::killerMoves[1][Search::ply] = moveList->moves[2];
+
+        // Search::historyMoves[getMovePiece(moveList->moves[0])][getMoveTarget(moveList->moves[0])] = 35;
+
+        // Move::printMoveScores(moveList);
         // Move::sortMoves(moveList);
-        // Move::printMoveList(moveList);
+        // std::cout << std::endl;
+        // Move::printMoveScores(moveList);
     }
     else {
         uciLoop();

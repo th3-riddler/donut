@@ -103,7 +103,18 @@ const int Evaluation::mvvLva[12][12] = {
 
 int Evaluation::scoreMove(int move) { // TO IMPROVE: encode the captured piece in the move
     if(getMoveCapture(move) != 13) {
-        return mvvLva[getMovePiece(move)][getMoveCapture(move)];
+        return mvvLva[getMovePiece(move)][getMoveCapture(move)] + 10000;
+    }
+    else {
+        if (Search::killerMoves[0][Search::ply] == move) {
+            return 9000;
+        }
+        else if (Search::killerMoves[1][Search::ply] == move) {
+            return 8000;
+        }
+        else {
+            return Search::historyMoves[getMovePiece(move)][getMoveTarget(move)];
+        }
     }
     return 0;
 }
