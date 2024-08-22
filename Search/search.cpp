@@ -10,6 +10,8 @@ int Search::pvLength[64];
 int Search::pvTable[64][64];
 bool Search::followPv;
 bool Search::scorePv;
+const int Search::fullDepthMoves = 4;
+const int Search::reductionLimit = 3;
 
 
 inline void Search::enablePvScore(moves *moveList) {
@@ -91,13 +93,33 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     Chessboard::nodes++;
 
-    int inCheck = Chessboard::isSquareAttacked(Chessboard::getLSBIndex((Chessboard::bitboard.sideToMove == Chessboard::white ? Chessboard::bitboard.bitboards[Chessboard::K] : Chessboard::bitboard.bitboards[Chessboard::k])), Chessboard::bitboard.sideToMove ^ 1);
+    int inCheck = Chessboard::isSquareAttacked(Chessboard::getLSBIndex((Chessboard::bitboard.sideToMove == Chessboard::white ? 
+                                                                        Chessboard::bitboard.bitboards[Chessboard::K] : Chessboard::bitboard.bitboards[Chessboard::k])), 
+                                                                        Chessboard::bitboard.sideToMove ^ 1);
 
     if (inCheck) {
         depth++;
     }
 
     int legalMoves = 0;
+
+    // NULL MOVE PRUNING
+    if (depth >= 3 && !inCheck && ply) {
+        copyBoard();
+
+        Chessboard::bitboard.sideToMove ^= 1;
+
+        Chessboard::bitboard.enPassantSquare = Chessboard::noSquare;
+
+        // Search Moves with a reduced depth (depth - 1 - R) --> R is the reduction amount
+        score = -negamax(-beta, -beta + 1, depth - 1 - 2);
+
+        takeBack();
+
+        if (score >= beta) {
+            return beta;
+        }
+    }
 
     moves moveList[1];
     Chessboard::generateMoves(moveList);
@@ -108,6 +130,8 @@ int Search::negamax(int alpha, int beta, int depth) {
     }
 
     Move::sortMoves(moveList);
+
+    int movesSearched = 0;
 
     for (int count = 0; count < moveList->count; count++) {
         copyBoard();
@@ -122,7 +146,7 @@ int Search::negamax(int alpha, int beta, int depth) {
         legalMoves++;
 
 
-        if (foundPv) {
+        if (foundPv) { // PVS
             score = -negamax(-alpha - 1, -alpha, depth - 1);
 
             if ((score > alpha) && (score < beta)) {
@@ -130,12 +154,33 @@ int Search::negamax(int alpha, int beta, int depth) {
             }   
         }
         else {
-            score = -negamax(-beta, -alpha, depth - 1);
+            if (movesSearched == 0) {
+                score = -negamax(-beta, -alpha, depth - 1);
+            }
+            else {
+                // LATE MOVE REDUCTION
+                if (movesSearched >= fullDepthMoves && depth >= reductionLimit && !inCheck && (getMoveCapture(moveList->moves[count]) == 13) && getMovePromoted(moveList->moves[count]) == 0) {
+                    score = -negamax(-alpha - 1, -alpha, depth - 2);
+                }
+                else {
+                    score = alpha + 1;
+                }
+                
+                if (score > alpha) {
+                    score = -negamax(-alpha - 1, -alpha, depth - 1);
+                
+                    if ((score > alpha) && (score < beta)) {
+                        score = -negamax(-beta, -alpha, depth - 1);
+                    }
+                }
+            }
         }
 
         ply--;
 
         takeBack();
+
+        movesSearched++;
 
         // Fail hard beta-cutoff
         if (score >= beta) {

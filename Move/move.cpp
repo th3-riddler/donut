@@ -640,13 +640,13 @@ void Move::printLegalMoves(moves *moveList) {
 // Sort Moves
 void Move::sortMoves(moves *moveList) {
     std::vector<std::pair<int, int>> scoredMoves;
-    for (int i = 0; i < moveList->count; i++) {
-        int score = Evaluation::scoreMove(moveList->moves[i]);
-        scoredMoves.emplace_back(score, moveList->moves[i]);
+    for (int count = 0; count < moveList->count; count++) {
+        int score = Evaluation::scoreMove(moveList->moves[count]);
+        scoredMoves.emplace_back(score, moveList->moves[count]);
     }
     std::sort(scoredMoves.begin(), scoredMoves.end(), std::greater<>());
 
-    for (int i = 0; i < moveList->count; i++) {
-        moveList->moves[i] = scoredMoves[i].second;
+    for (int count = 0; count < moveList->count; count++) {
+        moveList->moves[count] = scoredMoves[count].second;
     }
 }

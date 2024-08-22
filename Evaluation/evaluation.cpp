@@ -101,14 +101,24 @@ const int Evaluation::mvvLva[12][12] = {
 	100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600
 };
 
+
+/*  =======================
+         Move ordering
+    =======================
+    
+    1. PV move
+    2. Captures in MVV/LVA
+    3. 1st killer move
+    4. 2nd killer move
+    5. History moves
+    6. Unsorted moves
+*/
+
+
 int Evaluation::scoreMove(int move) {
     if (Search::scorePv) {
         if (Search::pvTable[0][Search::ply] == move) {
             Search::scorePv = false;
-
-            std::cout << "Current PV Move: ";
-            Move::printMove(move);
-            std::cout << " ply: " << Search::ply << std::endl;
             return 20000;
         }
     }

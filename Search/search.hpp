@@ -25,6 +25,9 @@ class Search {
         static int pvTable[maxPly][maxPly];
         static bool followPv;
         static bool scorePv;
+
+        static const int fullDepthMoves;
+        static const int reductionLimit;
 };
 
 

@@ -53,7 +53,7 @@ void Chessboard::init() {
 
     initCharPieces();
 
-    bool debug = true;
+    bool debug = false;
 
     if (debug) {
         //parseFEN("8/1b4br/2qk1n2/3p4/4PPPP/2p5/4Q1B1/3RK2R w KQ - 1 33");
@@ -61,7 +61,7 @@ void Chessboard::init() {
         printBoard();
 
         int start = getTimeMs();
-        Search::searchPosition(6);
+        Search::searchPosition(7);
         std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
 
         // moves moveList[1];
