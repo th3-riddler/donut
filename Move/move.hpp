@@ -4,6 +4,8 @@
 #include "../Chessboard/chessboard.hpp"
 #include "../Macros/macros.hpp"
 #include <iostream>
+#include <vector>
+#include <algorithm>
 
 class Chessboard;
 

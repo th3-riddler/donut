@@ -60,21 +60,16 @@ void Chessboard::init() {
         parseFEN(trickyPosition);
         printBoard();
 
-        // int start = getTimeMs();
+        int start = getTimeMs();
         Search::searchPosition(6);
-        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
+        std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
 
         // moves moveList[1];
         // generateMoves(moveList);
 
-        // Search::killerMoves[0][Search::ply] = moveList->moves[3];
-        // Search::killerMoves[1][Search::ply] = moveList->moves[2];
-
-        // Search::historyMoves[getMovePiece(moveList->moves[0])][getMoveTarget(moveList->moves[0])] = 35;
-
         // Move::printMoveScores(moveList);
         // Search::searchPosition(6);
-        // //Move::sortMoves(moveList);
+        // Move::sortMoves(moveList);
         // std::cout << std::endl;
         // Move::printMoveScores(moveList);
     }
