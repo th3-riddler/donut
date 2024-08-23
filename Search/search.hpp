@@ -8,6 +8,13 @@
 
 struct moves;
 
+struct tt {
+    uint64_t hashKey;
+    int depth;
+    int flags;
+    int score;
+};
+
 class Search {
     public:
         static int negamax(int alpha, int beta, int depth);
@@ -15,6 +22,7 @@ class Search {
 
         static void searchPosition(int depth);
         static inline void enablePvScore(moves *moveList);
+        static void clearTranspositionTable();
 
         static int ply;
 
@@ -27,6 +35,7 @@ class Search {
 
         static const int fullDepthMoves;
         static const int reductionLimit;
+        static tt transpositionTable[hashSize];
 };
 
 

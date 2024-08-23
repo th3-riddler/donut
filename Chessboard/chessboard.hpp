@@ -23,6 +23,7 @@
 class Move;
 class Evaluation;
 struct moves;
+struct tt;
 
 class Chessboard {
     public:

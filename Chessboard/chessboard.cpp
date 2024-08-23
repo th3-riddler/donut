@@ -69,7 +69,9 @@ void Chessboard::init() {
         parseFEN(startPosition);
         printBoard();
 
-        perftTest(6);
+        Search::clearTranspositionTable();
+
+        //perftTest(6);
 
         // int start = getTimeMs();
         // Search::searchPosition(7);

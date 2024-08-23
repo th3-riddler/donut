@@ -63,4 +63,10 @@
 
 #define maxPly 64
 
+#define hashFlagExact 0
+#define hashFlagAlpha 1
+#define hashFlagBeta 2
+
+#define hashSize 0x400000 // 4MB
+
 #endif // BITWISE_OPERATIONS_H

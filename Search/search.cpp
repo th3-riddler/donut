@@ -12,7 +12,17 @@ bool Search::followPv;
 bool Search::scorePv;
 const int Search::fullDepthMoves = 4;
 const int Search::reductionLimit = 3;
+tt Search::transpositionTable[hashSize];
 
+
+void Search::clearTranspositionTable() {
+    for (int index = 0; index < hashSize; index++) {
+        transpositionTable[index].hashKey = 0;
+        transpositionTable[index].depth = 0;
+        transpositionTable[index].flags = 0;
+        transpositionTable[index].score = 0;
+    }
+}
 
 inline void Search::enablePvScore(moves *moveList) {
     followPv = false;
