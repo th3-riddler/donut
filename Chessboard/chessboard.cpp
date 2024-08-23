@@ -47,25 +47,33 @@ int Chessboard::startTime = 0;
 int Chessboard::stopTime = 0;
 int Chessboard::timeSet = 0;
 bool Chessboard::stopped = false;
-
 BitBoard Chessboard::bitboard;
-
 long Chessboard::nodes;
+
+uint64_t Chessboard::pieceKeys[12][64];
+uint64_t Chessboard::enPassantKeys[64];
+uint64_t Chessboard::castleKeys[16];
+uint64_t Chessboard::sideKey;
+uint64_t Chessboard::hashKey = 0ULL;
+
 
 void Chessboard::init() {
 
     initCharPieces();
+    initRandomKeys();
 
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {
         //parseFEN("8/1b4br/2qk1n2/3p4/4PPPP/2p5/4Q1B1/3RK2R w KQ - 1 33");
-        parseFEN(trickyPosition);
+        parseFEN(startPosition);
         printBoard();
 
-        int start = getTimeMs();
-        Search::searchPosition(7);
-        std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
+        perftTest(6);
+
+        // int start = getTimeMs();
+        // Search::searchPosition(7);
+        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
 
         // moves moveList[1];
         // generateMoves(moveList);
@@ -80,6 +88,54 @@ void Chessboard::init() {
         uciLoop();
     }
     
+}
+
+void Chessboard::initRandomKeys() {
+
+    for (int piece = P; piece <= k; piece++) {
+        for (int square = 0; square < 64; square++) {
+            pieceKeys[piece][square] = Move::getRandomU64Number();
+        }
+    }
+
+    for (int square = 0; square < 64; square++) {
+        enPassantKeys[square] = Move::getRandomU64Number();
+    }
+
+    for (int index = 0; index < 16; index++) {
+        castleKeys[index] = Move::getRandomU64Number();
+    }
+
+    sideKey = Move::getRandomU64Number();
+}
+
+uint64_t Chessboard::generateHashKey() {
+    uint64_t finalKey = 0ULL;
+    uint64_t tempBitboard;
+
+    for (int piece = P; piece <= k; piece++) {
+        tempBitboard = bitboard.bitboards[piece];
+
+        while (tempBitboard) {
+            int square = getLSBIndex(tempBitboard);
+
+            finalKey ^= pieceKeys[piece][square];
+
+            CLEAR_BIT(tempBitboard, square);
+        }
+    }
+
+    if (bitboard.enPassantSquare != noSquare) {
+        finalKey ^= enPassantKeys[bitboard.enPassantSquare];
+    }
+
+    finalKey ^= castleKeys[bitboard.castlingRights];
+
+    if (bitboard.sideToMove == black) {
+        finalKey ^= sideKey;
+    }
+
+    return finalKey;
 }
 
 // Parse the FEN string
@@ -172,8 +228,8 @@ void Chessboard::parseFEN(const char *fen) {
     // Initialize both occupancies
     bitboard.occupancies[both] = bitboard.occupancies[white] | bitboard.occupancies[black];
 
-
-    std::cout << "FEN: " << fen << std::endl;
+    // Initialize hash key
+    hashKey = generateHashKey();
 }
 
 // Print the given bitboard
@@ -228,6 +284,8 @@ void Chessboard::printBoard() {
     std::cout << "En passant square:    " << (bitboard.enPassantSquare != noSquare ? squareToCoordinates[bitboard.enPassantSquare] : "no") << std::endl;
 
     std::cout << "Castling:             " << (bitboard.castlingRights & wk ? "K" : "-") << (bitboard.castlingRights & wq ? "Q" : "-") << (bitboard.castlingRights & bk ? "k" : "-") << (bitboard.castlingRights & bq ? "q" : "-") << std::endl;
+
+    std::cout << "Hash Key:             " << std::hex << hashKey << std::dec << std::endl;
 
     std::cout << std::endl;
 }
@@ -626,6 +684,8 @@ int Chessboard::makeMove(int move, int moveFlag) {
         CLEAR_BIT(bitboard.bitboards[piece], sourceSquare);
         SET_BIT(bitboard.bitboards[piece], targetSquare);
 
+        hashKey ^= pieceKeys[piece][sourceSquare] ^ pieceKeys[piece][targetSquare];
+
         if (getMoveCapture(move) != 13) {
             int startPiece, endPiece;
 
@@ -641,6 +701,7 @@ int Chessboard::makeMove(int move, int moveFlag) {
             for (int bbPiece = startPiece; bbPiece <= endPiece; bbPiece++) {
                 if (GET_BIT(bitboard.bitboards[bbPiece], targetSquare)) {
                     CLEAR_BIT(bitboard.bitboards[bbPiece], targetSquare);
+                    hashKey ^= pieceKeys[bbPiece][targetSquare];
                     break;
                 }
             }
@@ -649,15 +710,37 @@ int Chessboard::makeMove(int move, int moveFlag) {
         if (promotedPiece) {
             CLEAR_BIT(bitboard.bitboards[piece], targetSquare);
             SET_BIT(bitboard.bitboards[promotedPiece], targetSquare);
+            hashKey ^= pieceKeys[piece][targetSquare] ^ pieceKeys[promotedPiece][targetSquare];
         }
 
         if (getMoveEnPassant(move)) {
-            CLEAR_BIT(bitboard.bitboards[((bitboard.sideToMove == white) ? p : P)], targetSquare + ((bitboard.sideToMove == white) ? -8 : 8));
+            // CLEAR_BIT(bitboard.bitboards[((bitboard.sideToMove == white) ? p : P)], targetSquare + ((bitboard.sideToMove == white) ? -8 : 8));
+            if (bitboard.sideToMove == white) {
+                CLEAR_BIT(bitboard.bitboards[p], targetSquare - 8);
+                hashKey ^= pieceKeys[p][targetSquare - 8];
+            }
+            else {
+                CLEAR_BIT(bitboard.bitboards[P], targetSquare + 8);
+                hashKey ^= pieceKeys[P][targetSquare + 8];
+            }
         }
+        
+        if (bitboard.enPassantSquare != noSquare) {
+            hashKey ^= enPassantKeys[bitboard.enPassantSquare];
+        }
+
         bitboard.enPassantSquare = noSquare;
 
         if (getMoveDoublePush(move)) {
-            bitboard.enPassantSquare = targetSquare + ((bitboard.sideToMove == white) ? -8 : 8);
+            // bitboard.enPassantSquare = targetSquare + ((bitboard.sideToMove == white) ? -8 : 8);
+            if (bitboard.sideToMove == white) {
+                bitboard.enPassantSquare = targetSquare - 8;
+                hashKey ^= enPassantKeys[targetSquare - 8];
+            }
+            else {
+                bitboard.enPassantSquare = targetSquare + 8;
+                hashKey ^= enPassantKeys[targetSquare + 8];
+            }
         }
 
         if (getMoveCastling(move)) {
@@ -665,23 +748,29 @@ int Chessboard::makeMove(int move, int moveFlag) {
                 case (g1):
                     CLEAR_BIT(bitboard.bitboards[R], h1);
                     SET_BIT(bitboard.bitboards[R], f1);
+                    hashKey ^= pieceKeys[R][h1] ^ pieceKeys[R][f1];
                     break;
                 case (c1):
                     CLEAR_BIT(bitboard.bitboards[R], a1);
                     SET_BIT(bitboard.bitboards[R], d1);
+                    hashKey ^= pieceKeys[R][a1] ^ pieceKeys[R][d1];
                     break;
                 case (g8):
                     CLEAR_BIT(bitboard.bitboards[r], h8);
                     SET_BIT(bitboard.bitboards[r], f8);
+                    hashKey ^= pieceKeys[r][h8] ^ pieceKeys[r][f8];
                     break;
                 case (c8):
                     CLEAR_BIT(bitboard.bitboards[r], a8);
                     SET_BIT(bitboard.bitboards[r], d8);
+                    hashKey ^= pieceKeys[r][a8] ^ pieceKeys[r][d8];
                     break;
             }
         }
 
+        hashKey ^= castleKeys[bitboard.castlingRights];
         bitboard.castlingRights &= Move::castlingRightsMask[sourceSquare] & Move::castlingRightsMask[targetSquare];
+        hashKey ^= castleKeys[bitboard.castlingRights];
 
         memset(bitboard.occupancies, 0ULL, 24);
 
@@ -694,6 +783,20 @@ int Chessboard::makeMove(int move, int moveFlag) {
         bitboard.occupancies[both] = bitboard.occupancies[white] | bitboard.occupancies[black];
 
         bitboard.sideToMove ^= 1; // Switch side to move
+        hashKey ^= sideKey;
+
+        // ================ Debug Hash Key ================
+        // uint64_t hashFromScratch = generateHashKey();
+
+        // if (hashKey != hashFromScratch) {
+        //     std::cout << "\nMAKE MOVE\n" << std::endl;
+        //     std::cout << "move: ";
+        //     Move::printMove(move);
+        //     std::cout << std::endl;
+        //     printBoard();
+        //     std::cout << "Hash Key should be: " << std::hex << hashFromScratch << std::dec << std::endl;
+        //     getchar();
+        // }
 
         if (isSquareAttacked(getLSBIndex(((bitboard.sideToMove == white) ? bitboard.bitboards[k] : bitboard.bitboards[K])), bitboard.sideToMove)) {
             takeBack();
@@ -783,6 +886,18 @@ inline void Chessboard::perftDriver(int depth) {
 
         perftDriver(depth - 1);
         takeBack();
+
+        // uint64_t hashFromScratch = generateHashKey();
+
+        // if (hashKey != hashFromScratch) {
+        //     std::cout << "\nTAKE BACK\n" << std::endl;
+        //     std::cout << "move: ";
+        //     Move::printMove(moveList->moves[moveCount]);
+        //     std::cout << std::endl;
+        //     printBoard();
+        //     std::cout << "Hash Key should be: " << std::hex << hashFromScratch << std::dec << std::endl; 
+        //     getchar();
+        // }
     }
 }
 
@@ -808,7 +923,6 @@ void Chessboard::perftTest(int depth) {
         long oldNodes = nodes - commulativeNodes;
 
         takeBack();
-
 
         std::cout << "  Move: ";
         std::cout << squareToCoordinates[getMoveSource(moveList->moves[moveCount])] << squareToCoordinates[getMoveTarget(moveList->moves[moveCount])] << Move::promotedPieces[getMovePromoted(moveList->moves[moveCount])] << 

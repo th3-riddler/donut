@@ -3,13 +3,6 @@
 
 #include <iostream>
 
-// Move::Move() {
-//     initLeapersAttacks();
-//     initSlidingAttacks(Chessboard::bishop);
-//     initSlidingAttacks(Chessboard::rook);
-//     // initMagicNumbers();
-//     initPromotedPieces();
-// }
 
 void Move::init() {
     initLeapersAttacks();
@@ -624,6 +617,7 @@ void Move::printMoveScores(moves *moveList) {
     }
 }
 
+// Print Legal Moves
 void Move::printLegalMoves(moves *moveList) {
     for (int count = 0; count < moveList->count; count++) {
         copyBoard();

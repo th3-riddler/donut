@@ -31,6 +31,7 @@ class Chessboard {
         static BitBoard bitboard;
         static long nodes;
         static bool stopped;
+        static uint64_t hashKey;
 
         static char asciiPieces[13];
         static const char *unicodePieces[13]; // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
@@ -89,6 +90,12 @@ class Chessboard {
         static int stopTime;
         static int timeSet;
 
+        // Zobrist Keys
+        static uint64_t pieceKeys[12][64];
+        static uint64_t enPassantKeys[64];
+        static uint64_t castleKeys[16];
+        static uint64_t sideKey;
+
         enum { wk = 1, wq = 2, bk = 4, bq = 8 };
 
         static int charPieces[128]; // Inizializza tutto a 0
@@ -108,6 +115,9 @@ class Chessboard {
         static void uciLoop();
         static int inputWaiting();
         static void readInput();
+
+        static void initRandomKeys();
+        static uint64_t generateHashKey();
 };
 
 

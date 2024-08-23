@@ -51,6 +51,7 @@
     sideCopy = Chessboard::bitboard.sideToMove;                         \
     enPassantSquareCopy = Chessboard::bitboard.enPassantSquare;         \
     castlingRightsCopy = Chessboard::bitboard.castlingRights;           \
+    uint64_t hashKeyCopy = Chessboard::hashKey;                         \
 
 #define takeBack()                                                      \
     memcpy(Chessboard::bitboard.bitboards, bitboardsCopy, 96);          \
@@ -58,6 +59,7 @@
     Chessboard::bitboard.sideToMove = sideCopy;                         \
     Chessboard::bitboard.enPassantSquare = enPassantSquareCopy;         \
     Chessboard::bitboard.castlingRights = castlingRightsCopy;           \
+    Chessboard::hashKey = hashKeyCopy;                                  \
 
 #define maxPly 64
 

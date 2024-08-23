@@ -26,6 +26,7 @@ class Move {
         static void printLegalMoves(moves *moveList);
         static void sortMoves(moves *moveList);
 
+        static uint64_t getRandomU64Number();
         static void initMagicNumbers();
 
         static void init();
@@ -59,7 +60,6 @@ class Move {
 
         static uint64_t setOccupancy(int index, int bitsInMask, uint64_t attackMask);
         static unsigned int getRandomU32Number();
-        static uint64_t getRandomU64Number();
         static uint64_t generateMagicNumber();
         static uint64_t findMagicNumber(int square, int relevantBits, int bishop);
 
