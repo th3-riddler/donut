@@ -12,7 +12,6 @@ class Search {
     public:
         static int negamax(int alpha, int beta, int depth);
         static int quiescenceSearch(int alpha, int beta);
-        static int iterativeDeepening(int depth);
 
         static void searchPosition(int depth);
         static inline void enablePvScore(moves *moveList);

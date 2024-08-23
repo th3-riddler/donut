@@ -1,11 +1,4 @@
 #include "chessboard.hpp"
-#include "../Macros/macros.hpp"
-
-#include <sstream>
-#include <iostream>
-#include <stdlib.h>
-#include <iomanip>
-#include <sys/time.h>
 
 /*
 TODO:
@@ -44,6 +37,16 @@ inline void Chessboard::initCharPieces() {
     charPieces['q'] = q;
     charPieces['k'] = k;
 }
+
+bool Chessboard::quit = false;
+int Chessboard::movesToGo = 30;
+int Chessboard::moveTime = -1;
+int Chessboard::time = -1;
+int Chessboard::inc = 0;
+int Chessboard::startTime = 0;
+int Chessboard::stopTime = 0;
+int Chessboard::timeSet = 0;
+bool Chessboard::stopped = false;
 
 BitBoard Chessboard::bitboard;
 
@@ -892,14 +895,60 @@ void Chessboard::parsePosition(char *command) {
 
 void Chessboard::parseGo(char *command) {
     int depth = -1;
-    char *currentDepth = NULL;
+    char *argument = NULL;
 
-    if ((currentDepth = strstr(command, "depth"))) {
-        depth = atoi(currentDepth + 6);
+    if ((argument = strstr(command, "infinite"))) {}
+
+    if ((argument = strstr(command, "binc")) && bitboard.sideToMove == black) {
+        inc = atoi(argument + 5);
     }
-    else{
-        depth = 6;
+
+    if ((argument = strstr(command, "winc")) && bitboard.sideToMove == white) {
+        inc = atoi(argument + 5);
     }
+
+    if ((argument = strstr(command, "wtime")) && bitboard.sideToMove == white) {
+        time = atoi(argument + 6);
+    }
+
+    if ((argument = strstr(command, "btime")) && bitboard.sideToMove == black) {
+        time = atoi(argument + 6);
+    }
+
+    if ((argument = strstr(command, "movestogo"))) {
+        movesToGo = atoi(argument + 10);
+    }
+
+    if ((argument = strstr(command, "movetime"))) {
+        moveTime = atoi(argument + 9);
+    }
+    
+    if ((argument = strstr(command, "depth"))) {
+        depth = atoi(argument + 6);
+    }
+    
+    if (moveTime != -1) {
+        time = moveTime;
+        time -= 50;
+        movesToGo = 1;
+    }
+
+    startTime = getTimeMs();
+
+    depth = depth;
+
+    if (time != -1) {
+        timeSet = true;
+
+        time /= movesToGo;
+        stopTime = startTime + time + inc;
+    }
+
+    if (depth == -1) {
+        depth = 64;
+    }
+
+    std::cout << "time:" << time << " start:" << startTime << " stop:" << stopTime << " depth:" << depth << " timeset:" << timeSet << std::endl;
 
     Search::searchPosition(depth);
 }
@@ -967,4 +1016,53 @@ void Chessboard::uciLoop() {
             std::cout << "uciok" << std::endl;
         }
     }
+}
+
+int Chessboard::inputWaiting() {
+    fd_set readfds;
+    struct timeval tv;
+    FD_ZERO(&readfds);
+    FD_SET(fileno(stdin), &readfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    select(16, &readfds, 0, 0, &tv);
+
+    return (FD_ISSET(fileno(stdin), &readfds));
+}
+
+void Chessboard::readInput() {
+    int bytes;
+    char input[256] = "", *endc;
+
+    if (inputWaiting()) {
+        stopped = true;
+
+        do {
+            bytes = read(fileno(stdin), input, 256);
+        }
+        while (bytes < 0);
+
+        endc = strchr(input, '\n');
+
+        if (endc) {
+            *endc = 0;
+        }
+
+        if (strlen(input) > 0) {
+            if (!strncmp(input, "quit", 4)) {
+                quit = true;
+            }
+        }
+        else if (!strncmp(input, "stop", 4)) {
+            quit = true;
+        }
+    }
+}
+
+void Chessboard::communicate() {
+    if (timeSet == true && getTimeMs() > stopTime) {
+        stopped = true;
+    }
+
+    readInput();
 }

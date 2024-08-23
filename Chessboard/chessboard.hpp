@@ -6,9 +6,17 @@
 #include <string>
 #include <unordered_map>
 #include <cstdint>
+#include <sstream>
+#include <iostream>
+#include <stdlib.h>
+#include <iomanip>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/select.h>
 
 #include "../Move/move.hpp"
 #include "../Macros/bitboard.hpp"
+#include "../Macros/macros.hpp"
 #include "../Search/search.hpp"
 #include "../Evaluation/evaluation.hpp"
 
@@ -22,11 +30,13 @@ class Chessboard {
 
         static BitBoard bitboard;
         static long nodes;
+        static bool stopped;
 
         static char asciiPieces[13];
         static const char *unicodePieces[13]; // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
 
         static void init();
+        static void communicate();
 
         static void printBitboards(uint64_t bitboard);
 
@@ -70,8 +80,14 @@ class Chessboard {
                 return -1;
         }
     private:
-        const int squareSize = 100;
-        const int boardSize = 8;
+        static bool quit;
+        static int movesToGo;
+        static int moveTime;
+        static int time;
+        static int inc;
+        static int startTime;
+        static int stopTime;
+        static int timeSet;
 
         enum { wk = 1, wq = 2, bk = 4, bq = 8 };
 
@@ -90,6 +106,8 @@ class Chessboard {
         static void parsePosition(char *command);
         static void parseGo(char *command);
         static void uciLoop();
+        static int inputWaiting();
+        static void readInput();
 };
 
 

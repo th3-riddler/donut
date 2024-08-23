@@ -27,6 +27,10 @@ inline void Search::enablePvScore(moves *moveList) {
 
 int Search::quiescenceSearch(int alpha, int beta) {
 
+    if ((Chessboard::nodes & 2047) == 0) {
+        Chessboard::communicate();
+    }
+
     Chessboard::nodes++;
     
     int evaluation = Evaluation::evaluate();
@@ -77,7 +81,9 @@ int Search::quiescenceSearch(int alpha, int beta) {
 
 int Search::negamax(int alpha, int beta, int depth) {
 
-    bool foundPv = false;
+    if ((Chessboard::nodes & 2047) == 0) {
+        Chessboard::communicate();
+    }
 
     pvLength[ply] = ply;
 
@@ -116,6 +122,10 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         takeBack();
 
+        if (Chessboard::stopped) {
+            return 0;
+        }
+
         if (score >= beta) {
             return beta;
         }
@@ -124,7 +134,6 @@ int Search::negamax(int alpha, int beta, int depth) {
     moves moveList[1];
     Chessboard::generateMoves(moveList);
 
-    // If i'm following the PV line
     if (followPv) {
         enablePvScore(moveList);
     }
@@ -145,33 +154,24 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         legalMoves++;
 
-
-        if (foundPv) { // PVS
-            score = -negamax(-alpha - 1, -alpha, depth - 1);
-
-            if ((score > alpha) && (score < beta)) {
-                score = -negamax(-beta, -alpha, depth - 1);
-            }   
+        if (movesSearched == 0) {
+            score = -negamax(-beta, -alpha, depth - 1);
         }
         else {
-            if (movesSearched == 0) {
-                score = -negamax(-beta, -alpha, depth - 1);
+            // Late Move Reduction (LMR)
+            if (movesSearched >= fullDepthMoves && depth >= reductionLimit && !inCheck && (getMoveCapture(moveList->moves[count]) == 13) && getMovePromoted(moveList->moves[count]) == 0) {
+                score = -negamax(-alpha - 1, -alpha, depth - 2);
             }
             else {
-                // LATE MOVE REDUCTION
-                if (movesSearched >= fullDepthMoves && depth >= reductionLimit && !inCheck && (getMoveCapture(moveList->moves[count]) == 13) && getMovePromoted(moveList->moves[count]) == 0) {
-                    score = -negamax(-alpha - 1, -alpha, depth - 2);
-                }
-                else {
-                    score = alpha + 1;
-                }
-                
-                if (score > alpha) {
-                    score = -negamax(-alpha - 1, -alpha, depth - 1);
-                
-                    if ((score > alpha) && (score < beta)) {
-                        score = -negamax(-beta, -alpha, depth - 1);
-                    }
+                score = alpha + 1;
+            }
+            
+            // Principal Variation Search (PVS)
+            if (score > alpha) {
+                score = -negamax(-alpha - 1, -alpha, depth - 1);
+            
+                if ((score > alpha) && (score < beta)) {
+                    score = -negamax(-beta, -alpha, depth - 1);
                 }
             }
         }
@@ -179,6 +179,10 @@ int Search::negamax(int alpha, int beta, int depth) {
         ply--;
 
         takeBack();
+
+        if (Chessboard::stopped) {
+            return 0;
+        }
 
         movesSearched++;
 
@@ -197,8 +201,6 @@ int Search::negamax(int alpha, int beta, int depth) {
             }
 
             alpha = score;
-
-            foundPv = true;
 
             pvTable[ply][ply] = moveList->moves[count];
             for (int nextPly = ply + 1; nextPly < pvLength[ply + 1]; nextPly++) {
@@ -221,9 +223,10 @@ int Search::negamax(int alpha, int beta, int depth) {
     return alpha;
 }
 
-void Search::searchPosition(int depth) {
+void Search::searchPosition(int depth) { // 431897 | 274513
     Chessboard::nodes = 0;
     int score = 0;
+    Chessboard::stopped = false;
     followPv = false;
     scorePv = false;
 
@@ -232,12 +235,27 @@ void Search::searchPosition(int depth) {
     memset(pvTable, 0, sizeof(pvTable));
     memset(pvLength, 0, sizeof(pvLength));
 
+    int alpha = -50000;
+    int beta = 50000;
+
     // Iterative Deepening
     for (int currentDepth = 1; currentDepth <= depth; currentDepth++) {
-        Chessboard::nodes = 0;
+        if (Chessboard::stopped) {
+            break;
+        }
+
         followPv = true;
 
-        score = negamax(-50000, 50000, currentDepth);
+        score = negamax(alpha, beta, currentDepth);
+
+        // Aspiration Window
+        if ((score <= alpha) || (score >= beta)) {
+            alpha = -50000;
+            beta = 50000;
+            continue;
+        }
+        alpha = score - 50;
+        beta = score + 50;
 
         std::cout << "info score cp " << score << " depth " << currentDepth << " nodes " << Chessboard::nodes << " pv ";
 
