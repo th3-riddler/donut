@@ -15,15 +15,6 @@ const int Search::reductionLimit = 3;
 tt Search::transpositionTable[hashSize];
 
 
-void Search::clearTranspositionTable() {
-    for (int index = 0; index < hashSize; index++) {
-        transpositionTable[index].hashKey = 0;
-        transpositionTable[index].depth = 0;
-        transpositionTable[index].flags = 0;
-        transpositionTable[index].score = 0;
-    }
-}
-
 inline void Search::enablePvScore(moves *moveList) {
     followPv = false;
 
@@ -33,6 +24,44 @@ inline void Search::enablePvScore(moves *moveList) {
             followPv = true;
         }
     }
+}
+
+void Search::clearTranspositionTable() {
+    for (int index = 0; index < hashSize; index++) {
+        transpositionTable[index].hashKey = 0;
+        transpositionTable[index].depth = 0;
+        transpositionTable[index].flags = 0;
+        transpositionTable[index].score = 0;
+    }
+}
+
+int Search::readHashEntry(int alpha, int beta, int depth) {
+    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashSize];
+
+    if (ttEntry->hashKey == Chessboard::hashKey) {
+        if (ttEntry->depth >= depth) {
+            if (ttEntry->flags == hashFlagExact) {
+                return ttEntry->score;
+            }
+            if ((ttEntry->flags == hashFlagAlpha) && (ttEntry->score <= alpha)) {
+                return alpha;
+            }
+            if ((ttEntry->flags == hashFlagBeta) && (ttEntry->score >= beta)) {
+                return beta;
+            }
+        }
+    }
+
+    return noHashEntry;
+}
+
+void Search::writeHashEntry(int score, int depth, int flag) {
+    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashSize];
+
+    ttEntry->hashKey = Chessboard::hashKey;
+    ttEntry->score = score;
+    ttEntry->depth = depth;
+    ttEntry->flags = flag;
 }
 
 int Search::quiescenceSearch(int alpha, int beta) {
@@ -91,13 +120,19 @@ int Search::quiescenceSearch(int alpha, int beta) {
 
 int Search::negamax(int alpha, int beta, int depth) {
 
+    int score = 0;
+
+    int hashFlag = hashFlagAlpha;
+
+    if ((score = readHashEntry(alpha, beta, depth)) != noHashEntry) {
+        return score;
+    }
+
     if ((Chessboard::nodes & 2047) == 0) {
         Chessboard::communicate();
     }
 
     pvLength[ply] = ply;
-
-    int score = 0;
 
     if (depth == 0) {
         return quiescenceSearch(alpha, beta);
@@ -119,13 +154,17 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     int legalMoves = 0;
 
-    // NULL MOVE PRUNING
+    // Null Move Pruning
     if (depth >= 3 && !inCheck && ply) {
         copyBoard();
 
-        Chessboard::bitboard.sideToMove ^= 1;
-
+        if (Chessboard::bitboard.enPassantSquare != Chessboard::noSquare) {
+            Chessboard::hashKey ^= Chessboard::enPassantKeys[Chessboard::bitboard.enPassantSquare];
+        }
         Chessboard::bitboard.enPassantSquare = Chessboard::noSquare;
+
+        Chessboard::bitboard.sideToMove ^= 1;
+        Chessboard::hashKey ^= Chessboard::sideKey;
 
         // Search Moves with a reduced depth (depth - 1 - R) --> R is the reduction amount
         score = -negamax(-beta, -beta + 1, depth - 1 - 2);
@@ -198,6 +237,7 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         // Fail hard beta-cutoff
         if (score >= beta) {
+            writeHashEntry(beta, depth, hashFlagBeta);
             if (getMoveCapture(moveList->moves[count]) == 13) {
                 killerMoves[1][ply] = killerMoves[0][ply];
                 killerMoves[0][ply] = moveList->moves[count];
@@ -206,6 +246,7 @@ int Search::negamax(int alpha, int beta, int depth) {
         }
 
         if (score > alpha) {
+            hashFlag = hashFlagExact;
             if (getMoveCapture(moveList->moves[count]) == 13) {
                 historyMoves[getMovePiece(moveList->moves[count])][getMoveTarget(moveList->moves[count])] += depth;
             }
@@ -229,6 +270,8 @@ int Search::negamax(int alpha, int beta, int depth) {
         }
     }
 
+    writeHashEntry(alpha, depth, hashFlag);
+
     // Node fails low
     return alpha;
 }
@@ -244,6 +287,8 @@ void Search::searchPosition(int depth) { // 431897 | 274513
     memset(historyMoves, 0, sizeof(historyMoves));
     memset(pvTable, 0, sizeof(pvTable));
     memset(pvLength, 0, sizeof(pvLength));
+
+    clearTranspositionTable();
 
     int alpha = -50000;
     int beta = 50000;

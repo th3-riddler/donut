@@ -65,17 +65,12 @@ void Chessboard::init() {
     bool debug = true;
 
     if (debug) {
-        //parseFEN("8/1b4br/2qk1n2/3p4/4PPPP/2p5/4Q1B1/3RK2R w KQ - 1 33");
-        parseFEN(startPosition);
+        parseFEN("4k3/Q7/8/4K3/8/8/8/8 w - - ");
         printBoard();
 
-        Search::clearTranspositionTable();
-
-        //perftTest(6);
-
-        // int start = getTimeMs();
-        // Search::searchPosition(7);
-        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
+        int start = getTimeMs();
+        Search::searchPosition(15);
+        std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
 
         // moves moveList[1];
         // generateMoves(moveList);

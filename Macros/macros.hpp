@@ -69,4 +69,6 @@
 
 #define hashSize 0x400000 // 4MB
 
+#define noHashEntry 100000
+
 #endif // BITWISE_OPERATIONS_H

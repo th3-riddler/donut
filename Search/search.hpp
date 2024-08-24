@@ -23,6 +23,8 @@ class Search {
         static void searchPosition(int depth);
         static inline void enablePvScore(moves *moveList);
         static void clearTranspositionTable();
+        static int readHashEntry(int alpha, int beta, int depth);
+        static void writeHashEntry(int score, int depth, int flag);
 
         static int ply;
 

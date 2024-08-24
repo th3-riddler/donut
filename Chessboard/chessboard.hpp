@@ -32,6 +32,12 @@ class Chessboard {
         static BitBoard bitboard;
         static long nodes;
         static bool stopped;
+
+        // Zobrist Keys
+        static uint64_t pieceKeys[12][64];
+        static uint64_t enPassantKeys[64];
+        static uint64_t castleKeys[16];
+        static uint64_t sideKey;
         static uint64_t hashKey;
 
         static char asciiPieces[13];
@@ -39,6 +45,7 @@ class Chessboard {
 
         static void init();
         static void communicate();
+        static inline int getTimeMs();
 
         static void printBitboards(uint64_t bitboard);
 
@@ -81,21 +88,16 @@ class Chessboard {
             else
                 return -1;
         }
+        static int startTime;
     private:
         static bool quit;
         static int movesToGo;
         static int moveTime;
         static int time;
         static int inc;
-        static int startTime;
+        
         static int stopTime;
         static int timeSet;
-
-        // Zobrist Keys
-        static uint64_t pieceKeys[12][64];
-        static uint64_t enPassantKeys[64];
-        static uint64_t castleKeys[16];
-        static uint64_t sideKey;
 
         enum { wk = 1, wq = 2, bk = 4, bq = 8 };
 
@@ -107,7 +109,6 @@ class Chessboard {
         
         static void printAttackedSquares(int side);
 
-        static inline int getTimeMs();
         static inline void perftDriver(int depth);
         static void perftTest(int depth);
         static int parseMove(char *moveString);
