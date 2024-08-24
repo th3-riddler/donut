@@ -10,6 +10,7 @@ void Move::init() {
     initSlidingAttacks(Chessboard::rook);
     // initMagicNumbers();
     initPromotedPieces();
+    // Search::clearTranspositionTable();
 }
 
 // Pseudo Random Number State
@@ -614,20 +615,6 @@ void Move::printMoveScores(moves *moveList) {
     for (int count = 0; count < moveList->count; count++) {
         printMove(moveList->moves[count]);
         std::cout << "   score: " << Evaluation::scoreMove(moveList->moves[count]) << std::endl;
-    }
-}
-
-// Print Legal Moves
-void Move::printLegalMoves(moves *moveList) {
-    for (int count = 0; count < moveList->count; count++) {
-        copyBoard();
-        if(Chessboard::makeMove(moveList->moves[count], Chessboard::allMoves) == 0) {
-            takeBack();
-            continue;
-        }
-        takeBack();
-        printMove(moveList->moves[count]);
-        std::cout << std::endl;
     }
 }
 

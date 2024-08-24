@@ -62,24 +62,19 @@ void Chessboard::init() {
     initCharPieces();
     initRandomKeys();
 
-    bool debug = true;
+    Search::clearTranspositionTable();
+
+    bool debug = false;
 
     if (debug) {
-        parseFEN("4k3/Q7/8/4K3/8/8/8/8 w - - ");
+        parseFEN(startPosition);
         printBoard();
 
-        int start = getTimeMs();
-        Search::searchPosition(15);
-        std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
-
-        // moves moveList[1];
-        // generateMoves(moveList);
-
-        // Move::printMoveScores(moveList);
-        // Search::searchPosition(6);
-        // Move::sortMoves(moveList);
-        // std::cout << std::endl;
-        // Move::printMoveScores(moveList);
+        // int start = getTimeMs();
+        Search::searchPosition(10);
+        makeMove(Search::pvTable[0][0], allMoves);
+        Search::searchPosition(10);
+        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
     }
     else {
         uciLoop();
@@ -1111,6 +1106,7 @@ void Chessboard::uciLoop() {
 
         else if (strncmp(input, "ucinewgame", 10) == 0) {
             parsePosition("position startpos");
+            Search::clearTranspositionTable();
         }
 
         else if (strncmp(input, "go", 2) == 0) {

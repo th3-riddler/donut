@@ -60,8 +60,8 @@ void Search::writeHashEntry(int score, int depth, int flag) {
 
     ttEntry->hashKey = Chessboard::hashKey;
     ttEntry->score = score;
-    ttEntry->depth = depth;
     ttEntry->flags = flag;
+    ttEntry->depth = depth;
 }
 
 int Search::quiescenceSearch(int alpha, int beta) {
@@ -72,6 +72,10 @@ int Search::quiescenceSearch(int alpha, int beta) {
 
     Chessboard::nodes++;
     
+    if (ply > maxPly - 1) {
+        return Evaluation::evaluate();
+    }
+
     int evaluation = Evaluation::evaluate();
 
     // Fail hard beta-cutoff
@@ -105,13 +109,19 @@ int Search::quiescenceSearch(int alpha, int beta) {
 
         takeBack();
 
-        // Fail hard beta-cutoff
-        if (score >= beta) {
-            return beta;
+        if (Chessboard::stopped) {
+            return 0;
         }
+
+        
 
         if (score > alpha) {
             alpha = score;
+
+            // Fail hard beta-cutoff
+            if (score >= beta) {
+                return beta;
+            }
         }
     }
 
@@ -124,7 +134,7 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     int hashFlag = hashFlagAlpha;
 
-    if ((score = readHashEntry(alpha, beta, depth)) != noHashEntry) {
+    if (ply && ((score = readHashEntry(alpha, beta, depth)) != noHashEntry)) {
         return score;
     }
 
@@ -158,6 +168,8 @@ int Search::negamax(int alpha, int beta, int depth) {
     if (depth >= 3 && !inCheck && ply) {
         copyBoard();
 
+        ply++;
+
         if (Chessboard::bitboard.enPassantSquare != Chessboard::noSquare) {
             Chessboard::hashKey ^= Chessboard::enPassantKeys[Chessboard::bitboard.enPassantSquare];
         }
@@ -168,6 +180,8 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         // Search Moves with a reduced depth (depth - 1 - R) --> R is the reduction amount
         score = -negamax(-beta, -beta + 1, depth - 1 - 2);
+
+        ply--;
 
         takeBack();
 
@@ -235,16 +249,6 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         movesSearched++;
 
-        // Fail hard beta-cutoff
-        if (score >= beta) {
-            writeHashEntry(beta, depth, hashFlagBeta);
-            if (getMoveCapture(moveList->moves[count]) == 13) {
-                killerMoves[1][ply] = killerMoves[0][ply];
-                killerMoves[0][ply] = moveList->moves[count];
-            }
-            return beta;
-        }
-
         if (score > alpha) {
             hashFlag = hashFlagExact;
             if (getMoveCapture(moveList->moves[count]) == 13) {
@@ -258,6 +262,16 @@ int Search::negamax(int alpha, int beta, int depth) {
                 pvTable[ply][nextPly] = pvTable[ply + 1][nextPly]; // Copy the PV line from the next ply to the current ply
             }
             pvLength[ply] = pvLength[ply + 1];
+
+            // Fail hard beta-cutoff
+            if (score >= beta) {
+                writeHashEntry(beta, depth, hashFlagBeta);
+                if (getMoveCapture(moveList->moves[count]) == 13) {
+                    killerMoves[1][ply] = killerMoves[0][ply];
+                    killerMoves[0][ply] = moveList->moves[count];
+                }
+                return beta;
+            }
         }
     }
 
@@ -287,9 +301,7 @@ void Search::searchPosition(int depth) { // 431897 | 274513
     memset(historyMoves, 0, sizeof(historyMoves));
     memset(pvTable, 0, sizeof(pvTable));
     memset(pvLength, 0, sizeof(pvLength));
-
-    clearTranspositionTable();
-
+    
     int alpha = -50000;
     int beta = 50000;
 

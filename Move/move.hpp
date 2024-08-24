@@ -23,7 +23,6 @@ class Move {
         static void printMoveList(moves *moveList);
         static void printMoveScores(moves *moveList);
         static void printMove(int move);
-        static void printLegalMoves(moves *moveList);
         static void sortMoves(moves *moveList);
 
         static uint64_t getRandomU64Number();
