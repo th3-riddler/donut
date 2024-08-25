@@ -64,7 +64,7 @@ void Chessboard::init() {
 
     Search::clearTranspositionTable();
 
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {
         parseFEN(startPosition);
@@ -853,7 +853,7 @@ void Chessboard::printAttackedSquares(int side) {
     std::cout << "\n     a b c d e f g h\n" << std::endl;
 }
 
-inline int Chessboard::getTimeMs() {
+int Chessboard::getTimeMs() {
     struct timeval timeValue;
     gettimeofday(&timeValue, NULL);
     return timeValue.tv_sec * 1000 + timeValue.tv_usec / 1000;
@@ -1102,6 +1102,7 @@ void Chessboard::uciLoop() {
 
         else if (strncmp(input, "position", 8) == 0) {
             parsePosition(input);
+            Search::clearTranspositionTable();
         }
 
         else if (strncmp(input, "ucinewgame", 10) == 0) {

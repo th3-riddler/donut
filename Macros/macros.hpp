@@ -71,4 +71,10 @@
 
 #define noHashEntry 100000
 
+#define mateValue 49000
+
+#define mateScore 48000
+
+#define infinity 50000
+
 #endif // BITWISE_OPERATIONS_H

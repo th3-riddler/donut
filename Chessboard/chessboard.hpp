@@ -45,7 +45,7 @@ class Chessboard {
 
         static void init();
         static void communicate();
-        static inline int getTimeMs();
+        static int getTimeMs();
 
         static void printBitboards(uint64_t bitboard);
 

@@ -40,13 +40,23 @@ int Search::readHashEntry(int alpha, int beta, int depth) {
 
     if (ttEntry->hashKey == Chessboard::hashKey) {
         if (ttEntry->depth >= depth) {
-            if (ttEntry->flags == hashFlagExact) {
-                return ttEntry->score;
+
+            int score = ttEntry->score;
+
+            if (score < -mateScore) {
+                score += ply;
             }
-            if ((ttEntry->flags == hashFlagAlpha) && (ttEntry->score <= alpha)) {
+            if (score > mateScore) {
+                score -= ply;
+            }
+
+            if (ttEntry->flags == hashFlagExact) {
+                return score;
+            }
+            if ((ttEntry->flags == hashFlagAlpha) && (score <= alpha)) {
                 return alpha;
             }
-            if ((ttEntry->flags == hashFlagBeta) && (ttEntry->score >= beta)) {
+            if ((ttEntry->flags == hashFlagBeta) && (score >= beta)) {
                 return beta;
             }
         }
@@ -57,6 +67,13 @@ int Search::readHashEntry(int alpha, int beta, int depth) {
 
 void Search::writeHashEntry(int score, int depth, int flag) {
     tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashSize];
+
+    if (score < -mateScore) {
+        score -= ply;
+    }
+    if (score > mateScore) {
+        score += ply;
+    }
 
     ttEntry->hashKey = Chessboard::hashKey;
     ttEntry->score = score;
@@ -113,8 +130,6 @@ int Search::quiescenceSearch(int alpha, int beta) {
             return 0;
         }
 
-        
-
         if (score > alpha) {
             alpha = score;
 
@@ -134,7 +149,9 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     int hashFlag = hashFlagAlpha;
 
-    if (ply && ((score = readHashEntry(alpha, beta, depth)) != noHashEntry)) {
+    bool pvNode = ((beta - alpha) > 1);
+
+    if (ply && ((score = readHashEntry(alpha, beta, depth)) != noHashEntry) && !pvNode) {
         return score;
     }
 
@@ -277,7 +294,7 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     if (legalMoves == 0) {
         if (inCheck) {
-            return -49000 + ply;
+            return -mateValue + ply;
         }
         else {
             return 0;
@@ -302,8 +319,8 @@ void Search::searchPosition(int depth) { // 431897 | 274513
     memset(pvTable, 0, sizeof(pvTable));
     memset(pvLength, 0, sizeof(pvLength));
     
-    int alpha = -50000;
-    int beta = 50000;
+    int alpha = -infinity;
+    int beta = infinity;
 
     // Iterative Deepening
     for (int currentDepth = 1; currentDepth <= depth; currentDepth++) {
@@ -317,14 +334,22 @@ void Search::searchPosition(int depth) { // 431897 | 274513
 
         // Aspiration Window
         if ((score <= alpha) || (score >= beta)) {
-            alpha = -50000;
-            beta = 50000;
+            alpha = -infinity;
+            beta = infinity;
             continue;
         }
         alpha = score - 50;
         beta = score + 50;
 
-        std::cout << "info score cp " << score << " depth " << currentDepth << " nodes " << Chessboard::nodes << " pv ";
+        if (score > -mateValue && score < -mateScore) {
+            std::cout << "info score mate " << -(score + mateValue) / 2 - 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+        }
+        else if (score > mateScore && score < mateValue) {
+            std::cout << "info score mate " << (mateValue - score) / 2 + 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+        }
+        else {
+            std::cout << "info score cp " << score << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+        }
 
         for (int count = 0; count < pvLength[0]; count++) {
             Move::printMove(pvTable[0][count]);
