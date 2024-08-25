@@ -619,15 +619,48 @@ void Move::printMoveScores(moves *moveList) {
 }
 
 // Sort Moves
-void Move::sortMoves(moves *moveList) {
-    std::vector<std::pair<int, int>> scoredMoves;
-    for (int count = 0; count < moveList->count; count++) {
-        int score = Evaluation::scoreMove(moveList->moves[count]);
-        scoredMoves.emplace_back(score, moveList->moves[count]);
-    }
-    std::sort(scoredMoves.begin(), scoredMoves.end(), std::greater<>());
+// void Move::sortMoves(moves *moveList) {
+//     std::vector<std::pair<int, int>> scoredMoves;
+//     for (int count = 0; count < moveList->count; count++) {
+//         int score = Evaluation::scoreMove(moveList->moves[count]);
+//         scoredMoves.emplace_back(score, moveList->moves[count]);
+//     }
+//     std::sort(scoredMoves.begin(), scoredMoves.end(), std::greater<>());
 
-    for (int count = 0; count < moveList->count; count++) {
-        moveList->moves[count] = scoredMoves[count].second;
+//     for (int count = 0; count < moveList->count; count++) {
+//         moveList->moves[count] = scoredMoves[count].second;
+//     }
+// }
+
+void Move::sortMoves(moves *move_list)
+{
+    // move scores
+    int move_scores[move_list->count];
+    
+    // score all the moves within a move list
+    for (int count = 0; count < move_list->count; count++)
+        // score move
+        move_scores[count] = Evaluation::scoreMove(move_list->moves[count]);
+    
+    // loop over current move within a move list
+    for (int current_move = 0; current_move < move_list->count; current_move++)
+    {
+        // loop over next move within a move list
+        for (int next_move = current_move + 1; next_move < move_list->count; next_move++)
+        {
+            // compare current and next move scores
+            if (move_scores[current_move] < move_scores[next_move])
+            {
+                // swap scores
+                int temp_score = move_scores[current_move];
+                move_scores[current_move] = move_scores[next_move];
+                move_scores[next_move] = temp_score;
+                
+                // swap moves
+                int temp_move = move_list->moves[current_move];
+                move_list->moves[current_move] = move_list->moves[next_move];
+                move_list->moves[next_move] = temp_move;
+            }
+        }
     }
 }

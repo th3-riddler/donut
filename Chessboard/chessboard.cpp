@@ -64,15 +64,13 @@ void Chessboard::init() {
 
     Search::clearTranspositionTable();
 
-    bool debug = true;
+    bool debug = false;
 
     if (debug) {
-        parseFEN(startPosition);
+        parseFEN(repetitionPosition);
         printBoard();
 
         // int start = getTimeMs();
-        Search::searchPosition(10);
-        makeMove(Search::pvTable[0][0], allMoves);
         Search::searchPosition(10);
         // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
     }
@@ -140,6 +138,9 @@ void Chessboard::parseFEN(const char *fen) {
     bitboard.sideToMove = 0;
     bitboard.enPassantSquare = Chessboard::noSquare;
     bitboard.castlingRights = 0;
+
+    Search::repetitionIndex = 0;
+    memset(Search::repetitionTable, 0ULL, sizeof(Search::repetitionTable));
 
     for (int rank = 0; rank < 8; rank++){
         for (int file = 0; file < 8; file++){
@@ -986,6 +987,9 @@ void Chessboard::parsePosition(char *command) {
             if (move == 0) {
                 break;
             }
+
+            Search::repetitionIndex++;
+            Search::repetitionTable[Search::repetitionIndex] = hashKey;
 
             makeMove(move, allMoves);
 

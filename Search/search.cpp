@@ -14,6 +14,9 @@ const int Search::fullDepthMoves = 4;
 const int Search::reductionLimit = 3;
 tt Search::transpositionTable[hashSize];
 
+uint64_t Search::repetitionTable[1000];
+int Search::repetitionIndex;
+
 
 inline void Search::enablePvScore(moves *moveList) {
     followPv = false;
@@ -81,6 +84,19 @@ void Search::writeHashEntry(int score, int depth, int flag) {
     ttEntry->depth = depth;
 }
 
+
+inline bool Search::isRepetition() {
+
+    for (int index = 0; index < repetitionIndex; index++) {
+        if (repetitionTable[index] == Chessboard::hashKey) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 int Search::quiescenceSearch(int alpha, int beta) {
 
     if ((Chessboard::nodes & 2047) == 0) {
@@ -115,14 +131,22 @@ int Search::quiescenceSearch(int alpha, int beta) {
 
         ply++;
 
+        repetitionIndex++;
+        repetitionTable[repetitionIndex] = Chessboard::hashKey;
+
         if(Chessboard::makeMove(moveList->moves[count], Chessboard::capturesOnly) == 0) {
             ply--;
+
+            repetitionIndex--;
+
             continue;
         }
 
         int score = -quiescenceSearch(-beta, -alpha);
 
         ply--;
+
+        repetitionIndex--;
 
         takeBack();
 
@@ -148,6 +172,10 @@ int Search::negamax(int alpha, int beta, int depth) {
     int score = 0;
 
     int hashFlag = hashFlagAlpha;
+
+    if (ply && isRepetition()) {
+        return 0;
+    }
 
     bool pvNode = ((beta - alpha) > 1);
 
@@ -187,6 +215,9 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         ply++;
 
+        repetitionIndex++;
+        repetitionTable[repetitionIndex] = Chessboard::hashKey;
+
         if (Chessboard::bitboard.enPassantSquare != Chessboard::noSquare) {
             Chessboard::hashKey ^= Chessboard::enPassantKeys[Chessboard::bitboard.enPassantSquare];
         }
@@ -199,6 +230,8 @@ int Search::negamax(int alpha, int beta, int depth) {
         score = -negamax(-beta, -beta + 1, depth - 1 - 2);
 
         ply--;
+
+        repetitionIndex--;
 
         takeBack();
 
@@ -227,8 +260,14 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         ply++;
 
+        repetitionIndex++;
+        repetitionTable[repetitionIndex] = Chessboard::hashKey;
+
         if(Chessboard::makeMove(moveList->moves[count], Chessboard::allMoves) == 0) {
             ply--;
+
+            repetitionIndex--;
+
             continue;
         }
 
@@ -257,6 +296,8 @@ int Search::negamax(int alpha, int beta, int depth) {
         }
 
         ply--;
+
+        repetitionIndex--;
 
         takeBack();
 

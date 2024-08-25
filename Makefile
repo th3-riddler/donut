@@ -2,7 +2,7 @@ COMPILER = g++
 
 CFLAGS = -Wall -g -Wno-char-subscripts -Wno-write-strings -O3
 
-TARGET = engineVersions/reduxinator
+TARGET = engineVersions/iris
 
 SRCS = main.cpp Chessboard/chessboard.cpp Move/move.cpp
 
