@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "evaluation.hpp"
-#include "../Chessboard/chessboard.hpp"
 
 
 const int Evaluation::materialScore[12] = {
@@ -101,6 +100,12 @@ const int Evaluation::mvvLva[12][12] = {
 	100, 200, 300, 400, 500, 600,  100, 200, 300, 400, 500, 600
 };
 
+uint64_t Evaluation::fileMasks[64];
+uint64_t Evaluation::rankMasks[64];
+uint64_t Evaluation::isolatedMasks[64];
+uint64_t Evaluation::whitePassedMasks[64];
+uint64_t Evaluation::blackPassedMasks[64];
+
 
 /*  =======================
          Move ordering
@@ -114,6 +119,61 @@ const int Evaluation::mvvLva[12][12] = {
     6. Unsorted moves
 */
 
+
+uint64_t Evaluation::setFileRankMask(int fileNumber, int rankNumber) {
+    uint64_t mask = 0ULL;
+
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = (7 - rank) * 8 + file;
+
+            if (fileNumber != -1) {
+                if (file == fileNumber) {
+                    mask |= SET_BIT(mask, square);
+                }
+            }
+            else if (rankNumber != -1) {
+                if (rank == rankNumber) {
+                    mask |= SET_BIT(mask, square);
+                }
+            }
+        }
+    }
+
+    return mask;
+}
+
+void Evaluation::initEvalMasks() {
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = (7 - rank) * 8 + file;
+
+            fileMasks[square] |= setFileRankMask(file, -1);
+            rankMasks[square] |= setFileRankMask(-1, rank);
+            isolatedMasks[square] |= setFileRankMask(file - 1, -1) | setFileRankMask(file + 1, -1);
+        }
+    }
+
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = (7 - rank) * 8 + file;
+            whitePassedMasks[square] |= setFileRankMask(file - 1, -1) | setFileRankMask(file, -1) | setFileRankMask(file + 1, -1);
+            for (int i = 0; i < (8 - rank); i++) {
+                whitePassedMasks[square] &= ~rankMasks[i * 8 + file];
+            }
+        }
+    }
+
+    for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < 8; file++) {
+            int square = (7 - rank) * 8 + file;
+            blackPassedMasks[square] |= setFileRankMask(file - 1, -1) | setFileRankMask(file, -1) | setFileRankMask(file + 1, -1);
+            for (int i = 0; i < rank + 1; i++) {
+                blackPassedMasks[square] &= ~rankMasks[(7 - i) * 8 + file];
+            }
+        }
+    }
+}
 
 int Evaluation::scoreMove(int move) {
     if (Search::scorePv) {

@@ -61,17 +61,18 @@ void Chessboard::init() {
 
     initCharPieces();
     initRandomKeys();
+    Evaluation::initEvalMasks();
 
     Search::clearTranspositionTable();
 
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {
-        parseFEN(repetitionPosition);
+        parseFEN(startPosition);
         printBoard();
 
         // int start = getTimeMs();
-        Search::searchPosition(10);
+        // Search::searchPosition(10);
         // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
     }
     else {
@@ -227,6 +228,7 @@ void Chessboard::parseFEN(const char *fen) {
 
 // Print the given bitboard
 void Chessboard::printBitboards(uint64_t bitboard) {
+    std::cout << std::endl;
     for (int rank = 0; rank < 8; rank++) {
         for (int file = 0; file < 8; file++) {
             int square = (7 - rank) * 8 + file; // Calcola la posizione del bit
