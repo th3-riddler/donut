@@ -22,6 +22,13 @@ class Evaluation {
         static uint64_t isolatedMasks[64];
         static uint64_t whitePassedMasks[64];
         static uint64_t blackPassedMasks[64];
+        static const int getRank[64];
+        static const int doublePawnPenalty;
+        static const int isolatedPawnPenalty;
+        static const int passedPawnBonus[8];
+        static const int semiOpenFileBonus;
+        static const int openFileBonus;
+        static const int kingShieldBonus;
 
         static int evaluate();
         static int scoreMove(int move);

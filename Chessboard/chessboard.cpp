@@ -48,7 +48,7 @@ int Chessboard::stopTime = 0;
 int Chessboard::timeSet = 0;
 bool Chessboard::stopped = false;
 BitBoard Chessboard::bitboard;
-long Chessboard::nodes;
+uint64_t Chessboard::nodes;
 
 uint64_t Chessboard::pieceKeys[12][64];
 uint64_t Chessboard::enPassantKeys[64];
@@ -65,11 +65,12 @@ void Chessboard::init() {
 
     Search::clearTranspositionTable();
 
-    bool debug = true;
+    bool debug = false;
 
     if (debug) {
-        parseFEN(startPosition);
+        parseFEN("6k1/pppppbrp/8/8/8/8/PPPPPBRP/6K1 w - - ");
         printBoard();
+        std::cout << "Score: " << Evaluation::evaluate() << std::endl;
 
         // int start = getTimeMs();
         // Search::searchPosition(10);
@@ -1053,6 +1054,11 @@ void Chessboard::parseGo(char *command) {
         timeSet = true;
 
         time /= movesToGo;
+
+        if (time > 1500) {
+            time -= 50;
+        }
+
         stopTime = startTime + time + inc;
     }
 

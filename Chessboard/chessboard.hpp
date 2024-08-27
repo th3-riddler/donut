@@ -30,7 +30,7 @@ class Chessboard {
         static void parseFEN(const char *fen);
 
         static BitBoard bitboard;
-        static long nodes;
+        static uint64_t nodes;
         static bool stopped;
 
         // Zobrist Keys

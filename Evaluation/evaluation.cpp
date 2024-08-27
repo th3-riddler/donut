@@ -43,7 +43,7 @@ const int Evaluation::knightScore[64] = {
 const int Evaluation::bishopScore[64] = {
     0,   0,   0,   0,   0,   0,   0,   0,
     0,   0,   0,   0,   0,   0,   0,   0,
-    0,   0,   0,  10,  10,   0,   0,   0,
+    0,  20,   0,  10,  10,   0,  20,   0,
     0,   0,  10,  20,  20,  10,   0,   0,
     0,   0,  10,  20,  20,  10,   0,   0,
     0,  10,   0,   0,   0,   0,  10,   0,
@@ -72,6 +72,24 @@ const int Evaluation::kingScore[64] = {
     0,   5,   5,  -5,  -5,   0,   5,   0,
     0,   0,   5,   0, -15,   0,  10,   0
 };
+
+const int Evaluation::getRank[64] = {
+    7, 7, 7, 7, 7, 7, 7, 7,
+    6, 6, 6, 6, 6, 6, 6, 6,
+    5, 5, 5, 5, 5, 5, 5, 5,
+    4, 4, 4, 4, 4, 4, 4, 4,
+    3, 3, 3, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    1, 1, 1, 1, 1, 1, 1, 1,
+	0, 0, 0, 0, 0, 0, 0, 0
+};
+
+const int Evaluation::doublePawnPenalty = -10;
+const int Evaluation::isolatedPawnPenalty = -10;
+const int Evaluation::passedPawnBonus[8] = {0, 10, 30, 50, 75, 100, 150, 200};
+const int Evaluation::semiOpenFileBonus = 10;
+const int Evaluation::openFileBonus = 15;
+const int Evaluation::kingShieldBonus = 5;
 
 const int Evaluation::mirrorPieceScore[128] = {
     Chessboard::a8, Chessboard::b8, Chessboard::c8, Chessboard::d8, Chessboard::e8, Chessboard::f8, Chessboard::g8, Chessboard::h8,
@@ -207,6 +225,8 @@ int Evaluation::evaluate() {
     uint64_t bitboardCopy;
     int piece, square;
 
+    int doublePawns = 0;
+
     for (int bbPiece = Chessboard::P; bbPiece <= Chessboard::k; bbPiece++) {
         bitboardCopy = Chessboard::bitboard.bitboards[bbPiece];
 
@@ -215,19 +235,121 @@ int Evaluation::evaluate() {
             square = Chessboard::getLSBIndex(bitboardCopy);
 
             score += materialScore[piece];
-            
-            switch (piece) {
-                case Chessboard::P: score += pawnScore[mirrorPieceScore[square]]; break;
-                case Chessboard::N: score += knightScore[mirrorPieceScore[square]]; break;
-                case Chessboard::B: score += bishopScore[mirrorPieceScore[square]]; break;
-                case Chessboard::R: score += rookScore[mirrorPieceScore[square]]; break;
-                case Chessboard::K: score += kingScore[mirrorPieceScore[square]]; break;
 
-                case Chessboard::p: score -= pawnScore[square]; break;
+            switch (piece) {
+                case Chessboard::P: 
+                    score += pawnScore[mirrorPieceScore[square]];
+                    doublePawns = Chessboard::countBits(Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]);
+                    if (doublePawns > 1) {
+                        score += doublePawns * doublePawnPenalty;
+                    }
+
+                    if ((Chessboard::bitboard.bitboards[Chessboard::P] & isolatedMasks[square]) == 0) {
+                        score += isolatedPawnPenalty;
+                    }
+
+                    if ((whitePassedMasks[square] & Chessboard::bitboard.bitboards[Chessboard::p]) == 0) {
+                        score += passedPawnBonus[getRank[mirrorPieceScore[square]]];
+                    }
+                    break;
+
+                case Chessboard::N: score += knightScore[mirrorPieceScore[square]]; break;
+                case Chessboard::B: 
+                    score += bishopScore[mirrorPieceScore[square]];
+                    
+                    score += Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both]));
+
+                    break;
+
+                case Chessboard::R: 
+                    score += rookScore[mirrorPieceScore[square]];
+
+                    if ((Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]) == 0) {
+                        score += semiOpenFileBonus;
+                    }
+
+                    if (((Chessboard::bitboard.bitboards[Chessboard::P] | Chessboard::bitboard.bitboards[Chessboard::p]) & fileMasks[square]) == 0) {
+                        score += openFileBonus;
+                    }
+
+                    break;
+
+                case Chessboard::Q:
+                    
+                    score += Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both]));
+
+                    break;
+                
+                case Chessboard::K: 
+                    score += kingScore[mirrorPieceScore[square]]; 
+                    
+                    if ((Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]) == 0) {
+                        score -= semiOpenFileBonus;
+                    }
+
+                    if (((Chessboard::bitboard.bitboards[Chessboard::P] | Chessboard::bitboard.bitboards[Chessboard::p]) & fileMasks[square]) == 0) {
+                        score -= openFileBonus;
+                    }
+
+                    score += Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::white]) * kingShieldBonus;
+
+                    break;
+
+                case Chessboard::p: 
+                    score -= pawnScore[square];
+                    doublePawns = Chessboard::countBits(Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]);
+                    if (doublePawns > 1) {
+                        score -= doublePawns * doublePawnPenalty;
+                    }
+
+                    if ((Chessboard::bitboard.bitboards[Chessboard::p] & isolatedMasks[square]) == 0) {
+                        score -= isolatedPawnPenalty;
+                    }
+
+                    if ((blackPassedMasks[square] & Chessboard::bitboard.bitboards[Chessboard::P]) == 0) {
+                        score -= passedPawnBonus[getRank[square]];
+                    }
+                    break;
                 case Chessboard::n: score -= knightScore[square]; break;
-                case Chessboard::b: score -= bishopScore[square]; break;
-                case Chessboard::r: score -= rookScore[square]; break;
-                case Chessboard::k: score -= kingScore[square]; break;
+                case Chessboard::b: 
+                    score -= bishopScore[square];
+                    
+                    score -= Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both]));
+                    
+                    break;
+                case Chessboard::r: 
+                    score -= rookScore[square];
+                    
+                    if ((Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]) == 0) {
+                        score -= semiOpenFileBonus;
+                    }
+
+                    if (((Chessboard::bitboard.bitboards[Chessboard::p] | Chessboard::bitboard.bitboards[Chessboard::P]) & fileMasks[square]) == 0) {
+                        score -= openFileBonus;
+                    }
+
+                    break;
+
+                case Chessboard::q:
+                        
+                    score -= Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both]));
+
+                    break;
+
+                case Chessboard::k: 
+                    score -= kingScore[square];
+                    
+                    if ((Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]) == 0) {
+                        score += semiOpenFileBonus;
+                    }
+
+                    if (((Chessboard::bitboard.bitboards[Chessboard::p] | Chessboard::bitboard.bitboards[Chessboard::P]) & fileMasks[square]) == 0) {
+                        score += openFileBonus;
+                    }
+
+                    score -= Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::black]) * kingShieldBonus;
+
+                    break;
             }
 
 

@@ -14,7 +14,7 @@
 // Macro to check if a bit at a given position is set
 #define GET_BIT(board, square) (((board) & (1ULL << (square))) != 0)
 
-#define emptyBoard (const char*)"8/8/8/8/8/8/8/8 b - - "
+#define emptyBoard (const char*)"8/8/8/8/8/8/8/8 w - - "
 
 #define startPosition (const char*)"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
@@ -69,7 +69,7 @@
 #define hashFlagAlpha 1
 #define hashFlagBeta 2
 
-#define hashSize 0x400000 // 4MB
+#define hashSize 800000
 
 #define noHashEntry 100000
 
