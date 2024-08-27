@@ -79,4 +79,6 @@
 
 #define infinity 50000
 
+#define version "1.1"
+
 #endif // BITWISE_OPERATIONS_H

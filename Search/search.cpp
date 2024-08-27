@@ -382,21 +382,23 @@ void Search::searchPosition(int depth) { // 431897 | 274513
         alpha = score - 50;
         beta = score + 50;
 
-        if (score > -mateValue && score < -mateScore) {
-            std::cout << "info score mate " << -(score + mateValue) / 2 - 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
-        }
-        else if (score > mateScore && score < mateValue) {
-            std::cout << "info score mate " << (mateValue - score) / 2 + 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
-        }
-        else {
-            std::cout << "info score cp " << score << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
-        }
+        if (pvLength[0]) {
+            if (score > -mateValue && score < -mateScore) {
+                std::cout << "info score mate " << -(score + mateValue) / 2 - 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+            }
+            else if (score > mateScore && score < mateValue) {
+                std::cout << "info score mate " << (mateValue - score) / 2 + 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+            }
+            else {
+                std::cout << "info score cp " << score << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+            }
 
-        for (int count = 0; count < pvLength[0]; count++) {
-            Move::printMove(pvTable[0][count]);
-            std::cout << " ";
+            for (int count = 0; count < pvLength[0]; count++) {
+                Move::printMove(pvTable[0][count]);
+                std::cout << " ";
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 
     std::cout << "bestmove ";

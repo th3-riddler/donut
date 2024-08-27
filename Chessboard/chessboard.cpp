@@ -65,12 +65,12 @@ void Chessboard::init() {
 
     Search::clearTranspositionTable();
 
-    bool debug = true;
+    bool debug = false;
 
     if (debug) {
         parseFEN(startPosition);
         printBoard();
-        Evaluation::evaluate();
+        std::cout << "Score: " << Evaluation::evaluate() << std::endl;
 
         // int start = getTimeMs();
         // Search::searchPosition(10);
@@ -1006,7 +1006,22 @@ void Chessboard::parsePosition(char *command) {
     printBoard();
 }
 
+void Chessboard::resetTimeControl() {
+    quit = false;
+    movesToGo = 30;
+    moveTime = -1;
+    time = -1;
+    inc = 0;
+    startTime = 0;
+    stopTime = 0;
+    timeSet = false;
+    stopped = false;
+}
+
 void Chessboard::parseGo(char *command) {
+    
+    resetTimeControl();
+
     int depth = -1;
     char *argument = NULL;
 
@@ -1071,7 +1086,6 @@ void Chessboard::parseGo(char *command) {
     Search::searchPosition(depth);
 }
 
-
 /*
     GUI Commands
         - "uci" --> "uciok"
@@ -1090,7 +1104,7 @@ void Chessboard::uciLoop() {
     char input[2000];
 
     // Print Engine Information
-    std::cout << "id name Reduxinator" << std::endl;
+    std::cout << "id name Iris " << version << std::endl;
     std::cout << "id author Redux" << std::endl;
     std::cout << "uciok" << std::endl;
 
@@ -1131,7 +1145,7 @@ void Chessboard::uciLoop() {
         }
 
         else if (strncmp(input, "uci", 3) == 0) {
-            std::cout << "id name Reduxinator" << std::endl;
+            std::cout << "id name Iris" << version << std::endl;
             std::cout << "id author Redux" << std::endl;
             std::cout << "uciok" << std::endl;
         }

@@ -117,6 +117,7 @@ class Chessboard {
         static void uciLoop();
         static int inputWaiting();
         static void readInput();
+        static void resetTimeControl();
 
         static void initRandomKeys();
         static uint64_t generateHashKey();
