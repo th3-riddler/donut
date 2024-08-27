@@ -26,6 +26,7 @@ class Search {
         static int readHashEntry(int alpha, int beta, int depth);
         static void writeHashEntry(int score, int depth, int flag);
         static inline bool isRepetition();
+        static void initHashTable(int mb);
 
         static int ply;
 
@@ -36,9 +37,11 @@ class Search {
         static bool followPv;
         static bool scorePv;
 
+        static int hashEntries;
+
         static const int fullDepthMoves;
         static const int reductionLimit;
-        static tt transpositionTable[hashSize];
+        static tt *transpositionTable;
 
         static int repetitionIndex;
         static uint64_t repetitionTable[1000];

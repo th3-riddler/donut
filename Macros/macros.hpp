@@ -69,7 +69,7 @@
 #define hashFlagAlpha 1
 #define hashFlagBeta 2
 
-#define hashSize 800000
+// #define hashSize 800000
 
 #define noHashEntry 100000
 

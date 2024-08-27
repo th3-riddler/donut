@@ -63,7 +63,7 @@ void Chessboard::init() {
     initRandomKeys();
     Evaluation::initEvalMasks();
 
-    Search::clearTranspositionTable();
+    Search::initHashTable(64); // Default value of 64MB
 
     bool debug = false;
 
@@ -1019,7 +1019,7 @@ void Chessboard::resetTimeControl() {
 }
 
 void Chessboard::parseGo(char *command) {
-    
+
     resetTimeControl();
 
     int depth = -1;
@@ -1086,72 +1086,6 @@ void Chessboard::parseGo(char *command) {
     Search::searchPosition(depth);
 }
 
-/*
-    GUI Commands
-        - "uci" --> "uciok"
-        - "isready" --> "readyok"
-        - "ucinewgame"
-    
-*/
-
-void Chessboard::uciLoop() {
-
-    // Reset STDIN and STDOUT buffers
-    setbuf(stdin, NULL);
-    setbuf(stdout, NULL);
-
-    // Define User / GUI input buffer
-    char input[2000];
-
-    // Print Engine Information
-    std::cout << "id name Iris " << version << std::endl;
-    std::cout << "id author Redux" << std::endl;
-    std::cout << "uciok" << std::endl;
-
-    while (true) {
-        // Reset input buffer
-        memset(input, 0, sizeof(input));
-        fflush(stdout);
-
-        if(!fgets(input, 2000, stdin)) {
-            continue;
-        }
-
-        if (input[0] == '\n') {
-            continue;
-        }
-
-        if (strncmp(input, "isready", 7) == 0) {
-            std::cout << "readyok" << std::endl;
-            continue;
-        }
-
-        else if (strncmp(input, "position", 8) == 0) {
-            parsePosition(input);
-            Search::clearTranspositionTable();
-        }
-
-        else if (strncmp(input, "ucinewgame", 10) == 0) {
-            parsePosition("position startpos");
-            Search::clearTranspositionTable();
-        }
-
-        else if (strncmp(input, "go", 2) == 0) {
-            parseGo(input);
-        }
-
-        else if (strncmp(input, "quit", 4) == 0) {
-            break;
-        }
-
-        else if (strncmp(input, "uci", 3) == 0) {
-            std::cout << "id name Iris" << version << std::endl;
-            std::cout << "id author Redux" << std::endl;
-            std::cout << "uciok" << std::endl;
-        }
-    }
-}
-
 int Chessboard::inputWaiting() {
     fd_set readfds;
     struct timeval tv;
@@ -1199,4 +1133,83 @@ void Chessboard::communicate() {
     }
 
     readInput();
+}
+
+/*
+    GUI Commands
+        - "uci" --> "uciok"
+        - "isready" --> "readyok"
+        - "ucinewgame"
+    
+*/
+
+void Chessboard::uciLoop() {
+
+    int maxHash = 128;
+    int mb = 64;
+
+    // Reset STDIN and STDOUT buffers
+    setbuf(stdin, NULL);
+    setbuf(stdout, NULL);
+
+    // Define User / GUI input buffer
+    char input[2000];
+
+    // Print Engine Information
+    std::cout << "id name Iris " << version << std::endl;
+    std::cout << "id author Redux" << std::endl;
+    std::cout << "option name Hash type spin default 64 min 4 max " << maxHash << std::endl;
+    std::cout << "uciok" << std::endl;
+
+    while (true) {
+        // Reset input buffer
+        memset(input, 0, sizeof(input));
+        fflush(stdout);
+
+        if(!fgets(input, 2000, stdin)) {
+            continue;
+        }
+
+        if (input[0] == '\n') {
+            continue;
+        }
+
+        if (strncmp(input, "isready", 7) == 0) {
+            std::cout << "readyok" << std::endl;
+            continue;
+        }
+
+        else if (strncmp(input, "position", 8) == 0) {
+            parsePosition(input);
+            Search::clearTranspositionTable();
+        }
+
+        else if (strncmp(input, "ucinewgame", 10) == 0) {
+            parsePosition("position startpos");
+            Search::clearTranspositionTable();
+        }
+
+        else if (strncmp(input, "go", 2) == 0) {
+            parseGo(input);
+        }
+
+        else if (strncmp(input, "quit", 4) == 0) {
+            break;
+        }
+
+        else if (strncmp(input, "uci", 3) == 0) {
+            std::cout << "id name Iris" << version << std::endl;
+            std::cout << "id author Redux" << std::endl;
+            std::cout << "uciok" << std::endl;
+        }
+
+        else if (!strncmp(input, "setoption name Hash value ", 26)) {
+            sscanf(input, "%*s %*s %*s %*s %d", &mb);
+            if (mb < 4) { mb = 4; }
+            if (mb > maxHash) { mb = maxHash; }
+
+            std::cout << "    Set hash table size to " << mb << "MB" << std::endl;
+            Search::initHashTable(mb);
+        }
+    }
 }

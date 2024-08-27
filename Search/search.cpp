@@ -12,7 +12,8 @@ bool Search::followPv;
 bool Search::scorePv;
 const int Search::fullDepthMoves = 4;
 const int Search::reductionLimit = 3;
-tt Search::transpositionTable[hashSize];
+int Search::hashEntries = 0;
+tt* Search::transpositionTable = NULL;
 
 uint64_t Search::repetitionTable[1000];
 int Search::repetitionIndex;
@@ -30,16 +31,40 @@ inline void Search::enablePvScore(moves *moveList) {
 }
 
 void Search::clearTranspositionTable() {
-    for (int index = 0; index < hashSize; index++) {
-        transpositionTable[index].hashKey = 0;
-        transpositionTable[index].depth = 0;
-        transpositionTable[index].flags = 0;
-        transpositionTable[index].score = 0;
+    tt *hashEntry;
+    for (hashEntry = transpositionTable; hashEntry < transpositionTable + hashEntries; hashEntry++) {
+        hashEntry->hashKey = 0;
+        hashEntry->depth = 0;
+        hashEntry->flags = 0;
+        hashEntry->score = 0;
+    }
+}
+
+void Search::initHashTable(int mb) {
+    int hashSize = 0x100000 * mb;
+
+    hashEntries = hashSize / sizeof(tt);
+
+    if (transpositionTable != NULL) {
+        std::cout << "  Clearing hash memory..." << std::endl;
+        free(transpositionTable);
+    }
+
+    transpositionTable = (tt *) malloc(hashEntries * sizeof(tt));
+
+    if (transpositionTable == NULL) {
+        std::cout << "  Couldn't allocate memory for hash table! Trying with " << mb / 2 << "MB..." << std::endl;
+
+        initHashTable(mb / 2);
+    }
+    else {
+        clearTranspositionTable();
+        std::cout << "  Hash Table has been initialized with " << hashEntries << " entries." << std::endl;
     }
 }
 
 int Search::readHashEntry(int alpha, int beta, int depth) {
-    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashSize];
+    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashEntries];
 
     if (ttEntry->hashKey == Chessboard::hashKey) {
         if (ttEntry->depth >= depth) {
@@ -69,7 +94,7 @@ int Search::readHashEntry(int alpha, int beta, int depth) {
 }
 
 void Search::writeHashEntry(int score, int depth, int flag) {
-    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashSize];
+    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashEntries];
 
     if (score < -mateScore) {
         score -= ply;
