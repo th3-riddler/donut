@@ -7,7 +7,11 @@
 
 class Evaluation {
     public:
-        static const int materialScore[12];
+        static const int materialScore[2][12];
+        static const int openingPhaseScore;
+        static const int endgamePhaseScore;
+        static const int positionalScore[2][6][64];
+
         static const int pawnScore[64];
         static const int knightScore[64];
         static const int bishopScore[64];
@@ -34,6 +38,10 @@ class Evaluation {
         static int scoreMove(int move);
         static uint64_t setFileRankMask(int fileNumber, int rankNumber);
         static void initEvalMasks();
+        static inline int getGamePhaseScore();
+
+        enum { opening, endgame, middlegame };
+        enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 };
 
 

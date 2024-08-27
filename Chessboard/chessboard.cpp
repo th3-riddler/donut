@@ -65,12 +65,12 @@ void Chessboard::init() {
 
     Search::clearTranspositionTable();
 
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {
-        parseFEN("6k1/pppppbrp/8/8/8/8/PPPPPBRP/6K1 w - - ");
+        parseFEN(startPosition);
         printBoard();
-        std::cout << "Score: " << Evaluation::evaluate() << std::endl;
+        Evaluation::evaluate();
 
         // int start = getTimeMs();
         // Search::searchPosition(10);
