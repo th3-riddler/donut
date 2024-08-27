@@ -65,12 +65,12 @@ void Chessboard::init() {
 
     Search::initHashTable(64); // Default value of 64MB
 
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {
-        parseFEN(startPosition);
+        parseFEN("r3k2r/p1ppqpb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPB1PPP/R3K2R w KQkq - 0 1");
         printBoard();
-        std::cout << "Score: " << Evaluation::evaluate() << std::endl;
+        std::cout << "Score: " << Evaluation::evaluate() << std::endl; // 47
 
         // int start = getTimeMs();
         // Search::searchPosition(10);
@@ -1070,11 +1070,11 @@ void Chessboard::parseGo(char *command) {
 
         time /= movesToGo;
 
-        if (time > 1500) {
-            time -= 50;
-        }
+        if (time > 1500) { time -= 50; }
 
         stopTime = startTime + time + inc;
+
+        if (time < 1500 && inc && depth == 64) { stopTime = startTime + inc - 50; }
     }
 
     if (depth == -1) {

@@ -69,8 +69,6 @@
 #define hashFlagAlpha 1
 #define hashFlagBeta 2
 
-// #define hashSize 800000
-
 #define noHashEntry 100000
 
 #define mateValue 49000

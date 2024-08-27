@@ -194,6 +194,8 @@ int Search::quiescenceSearch(int alpha, int beta) {
 
 int Search::negamax(int alpha, int beta, int depth) {
 
+    pvLength[ply] = ply;
+
     int score = 0;
 
     int hashFlag = hashFlagAlpha;
@@ -211,8 +213,6 @@ int Search::negamax(int alpha, int beta, int depth) {
     if ((Chessboard::nodes & 2047) == 0) {
         Chessboard::communicate();
     }
-
-    pvLength[ply] = ply;
 
     if (depth == 0) {
         return quiescenceSearch(alpha, beta);

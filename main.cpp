@@ -4,5 +4,7 @@
 int main(int argc, char* argv[]) {
     Move::init();
     Chessboard::init();
+
+    free(Search::transpositionTable);
     return 0;
 }

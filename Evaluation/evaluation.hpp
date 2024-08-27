@@ -27,11 +27,25 @@ class Evaluation {
         static uint64_t whitePassedMasks[64];
         static uint64_t blackPassedMasks[64];
         static const int getRank[64];
-        static const int doublePawnPenalty;
-        static const int isolatedPawnPenalty;
+
+        static const int doublePawnPenaltyOpening;
+        static const int doublePawnPenaltyEndgame;
+
+        static const int isolatedPawnPenaltyOpening;
+        static const int isolatedPawnPenaltyEndgame;
+
         static const int passedPawnBonus[8];
         static const int semiOpenFileBonus;
         static const int openFileBonus;
+
+        static const int bishopUnit;
+        static const int queenUnit;
+
+        static const int bishopMobilityOpening;
+        static const int bishopMobilityEndgame;
+        static const int queenMobilityOpening;
+        static const int queenMobilityEndgame;
+
         static const int kingShieldBonus;
 
         static int evaluate();
