@@ -49,6 +49,7 @@ class Chessboard {
         static int getTimeMs();
 
         static void printBitboards(uint64_t bitboard);
+        static void resetBoard();
 
         static void generateMoves(moves *moveList);
         static int makeMove(int move, int moveFlag);

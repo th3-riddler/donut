@@ -18,6 +18,8 @@ tt* Search::transpositionTable = NULL;
 uint64_t Search::repetitionTable[1000];
 int Search::repetitionIndex;
 
+int Search::fifty;
+
 
 inline void Search::enablePvScore(moves *moveList) {
     followPv = false;
@@ -63,50 +65,44 @@ void Search::initHashTable(int mb) {
     }
 }
 
-int Search::readHashEntry(int alpha, int beta, int depth) {
-    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashEntries];
+int Search::readHashEntry(int alpha, int beta, int* bestMove, int depth) {
+    tt *hashEntry = &transpositionTable[Chessboard::hashKey % hashEntries];
 
-    if (ttEntry->hashKey == Chessboard::hashKey) {
-        if (ttEntry->depth >= depth) {
+    if (hashEntry->hashKey == Chessboard::hashKey) {
+        if (hashEntry->depth >= depth) {
 
-            int score = ttEntry->score;
+            int score = hashEntry->score;
 
-            if (score < -mateScore) {
-                score += ply;
-            }
-            if (score > mateScore) {
-                score -= ply;
-            }
+            if (score < -mateScore) { score += ply; }
+            if (score > mateScore) { score -= ply; }
 
-            if (ttEntry->flags == hashFlagExact) {
+            if (hashEntry->flags == hashFlagExact) {
                 return score;
             }
-            if ((ttEntry->flags == hashFlagAlpha) && (score <= alpha)) {
+            if ((hashEntry->flags == hashFlagAlpha) && (score <= alpha)) {
                 return alpha;
             }
-            if ((ttEntry->flags == hashFlagBeta) && (score >= beta)) {
+            if ((hashEntry->flags == hashFlagBeta) && (score >= beta)) {
                 return beta;
             }
         }
+        *bestMove = hashEntry->bestMove;
     }
 
     return noHashEntry;
 }
 
-void Search::writeHashEntry(int score, int depth, int flag) {
-    tt *ttEntry = &transpositionTable[Chessboard::hashKey % hashEntries];
+void Search::writeHashEntry(int score, int bestMove, int depth, int flag) {
+    tt *hashEntry = &transpositionTable[Chessboard::hashKey % hashEntries];
 
-    if (score < -mateScore) {
-        score -= ply;
-    }
-    if (score > mateScore) {
-        score += ply;
-    }
+    if (score < -mateScore) { score -= ply; }
+    if (score > mateScore) { score += ply; }
 
-    ttEntry->hashKey = Chessboard::hashKey;
-    ttEntry->score = score;
-    ttEntry->flags = flag;
-    ttEntry->depth = depth;
+    hashEntry->hashKey = Chessboard::hashKey;
+    hashEntry->score = score;
+    hashEntry->flags = flag;
+    hashEntry->depth = depth;
+    hashEntry->bestMove = bestMove;
 }
 
 
@@ -149,7 +145,7 @@ int Search::quiescenceSearch(int alpha, int beta) {
     moves moveList[1];
     Chessboard::generateMoves(moveList);
 
-    Move::sortMoves(moveList);
+    Move::sortMoves(moveList, 0);
 
     for (int count = 0; count < moveList->count; count++) {
         copyBoard();
@@ -198,15 +194,18 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     int score = 0;
 
+    // The best move to store in the Transoposition Table
+    int bestMove = 0;
+
     int hashFlag = hashFlagAlpha;
 
-    if (ply && isRepetition()) {
+    if ((ply && isRepetition()) || fifty >= 100) {
         return 0;
     }
 
-    bool pvNode = ((beta - alpha) > 1);
+    bool pvNode = (beta - alpha) > 1;
 
-    if (ply && ((score = readHashEntry(alpha, beta, depth)) != noHashEntry) && !pvNode) {
+    if (ply && ((score = readHashEntry(alpha, beta, &bestMove, depth)) != noHashEntry) && !pvNode) {
         return score;
     }
 
@@ -233,6 +232,17 @@ int Search::negamax(int alpha, int beta, int depth) {
     }
 
     int legalMoves = 0;
+
+    // Evaluation Pruning
+    int staticEval = Evaluation::evaluate();
+
+    if (depth < 3 && !pvNode && !inCheck && abs(beta - 1) > -infinity + 100) {
+        int evalMargin = 120 * depth;
+
+        if (staticEval - evalMargin >= beta) {
+            return staticEval - evalMargin;
+        }
+    }
 
     // Null Move Pruning
     if (depth >= 3 && !inCheck && ply) {
@@ -269,6 +279,30 @@ int Search::negamax(int alpha, int beta, int depth) {
         }
     }
 
+    // Razoring
+    if (!pvNode && !inCheck && depth <= 3) {
+        score = Evaluation::evaluate() + 125;
+
+        int newScore;
+
+        if (score < beta) {
+            if (depth == 1) {
+                newScore = quiescenceSearch(alpha, beta);
+
+                return (newScore > score) ? newScore : score;
+            }
+            score += 175;
+
+            if (score < beta && depth <= 2) {
+                newScore = quiescenceSearch(alpha, beta);
+
+                if (newScore < beta) {
+                    return (newScore > score) ? newScore : score;
+                }
+            }
+        }
+    }
+
     moves moveList[1];
     Chessboard::generateMoves(moveList);
 
@@ -276,7 +310,7 @@ int Search::negamax(int alpha, int beta, int depth) {
         enablePvScore(moveList);
     }
 
-    Move::sortMoves(moveList);
+    Move::sortMoves(moveList, bestMove);
 
     int movesSearched = 0;
 
@@ -334,6 +368,9 @@ int Search::negamax(int alpha, int beta, int depth) {
 
         if (score > alpha) {
             hashFlag = hashFlagExact;
+
+            bestMove = moveList->moves[count];
+
             if (getMoveCapture(moveList->moves[count]) == 13) {
                 historyMoves[getMovePiece(moveList->moves[count])][getMoveTarget(moveList->moves[count])] += depth;
             }
@@ -348,7 +385,7 @@ int Search::negamax(int alpha, int beta, int depth) {
 
             // Fail hard beta-cutoff
             if (score >= beta) {
-                writeHashEntry(beta, depth, hashFlagBeta);
+                writeHashEntry(beta, bestMove, depth, hashFlagBeta);
                 if (getMoveCapture(moveList->moves[count]) == 13) {
                     killerMoves[1][ply] = killerMoves[0][ply];
                     killerMoves[0][ply] = moveList->moves[count];
@@ -367,13 +404,13 @@ int Search::negamax(int alpha, int beta, int depth) {
         }
     }
 
-    writeHashEntry(alpha, depth, hashFlag);
+    writeHashEntry(alpha, bestMove, depth, hashFlag);
 
     // Node fails low
     return alpha;
 }
 
-void Search::searchPosition(int depth) { // 431897 | 274513
+void Search::searchPosition(int depth) {
     Chessboard::nodes = 0;
     int score = 0;
     Chessboard::stopped = false;

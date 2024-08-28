@@ -632,34 +632,43 @@ void Move::printMoveScores(moves *moveList) {
 //     }
 // }
 
-void Move::sortMoves(moves *move_list)
+void Move::sortMoves(moves *moveList, int bestMove)
 {
     // move scores
-    int move_scores[move_list->count];
+    int moveScores[moveList->count];
+
+    for (int count = 0; count < moveList->count; count++) {
+        if (bestMove == moveList->moves[count]) {
+            moveScores[count] = 30000;
+        }
+        else {
+            moveScores[count] = Evaluation::scoreMove(moveList->moves[count]);
+        }
+    }
     
     // score all the moves within a move list
-    for (int count = 0; count < move_list->count; count++)
+    for (int count = 0; count < moveList->count; count++)
         // score move
-        move_scores[count] = Evaluation::scoreMove(move_list->moves[count]);
+        moveScores[count] = Evaluation::scoreMove(moveList->moves[count]);
     
     // loop over current move within a move list
-    for (int current_move = 0; current_move < move_list->count; current_move++)
+    for (int currentMove = 0; currentMove < moveList->count; currentMove++)
     {
         // loop over next move within a move list
-        for (int next_move = current_move + 1; next_move < move_list->count; next_move++)
+        for (int nextMove = currentMove + 1; nextMove < moveList->count; nextMove++)
         {
             // compare current and next move scores
-            if (move_scores[current_move] < move_scores[next_move])
+            if (moveScores[currentMove] < moveScores[nextMove])
             {
                 // swap scores
-                int temp_score = move_scores[current_move];
-                move_scores[current_move] = move_scores[next_move];
-                move_scores[next_move] = temp_score;
+                int tempScore = moveScores[currentMove];
+                moveScores[currentMove] = moveScores[nextMove];
+                moveScores[nextMove] = tempScore;
                 
                 // swap moves
-                int temp_move = move_list->moves[current_move];
-                move_list->moves[current_move] = move_list->moves[next_move];
-                move_list->moves[next_move] = temp_move;
+                int tempMove = moveList->moves[currentMove];
+                moveList->moves[currentMove] = moveList->moves[nextMove];
+                moveList->moves[nextMove] = tempMove;
             }
         }
     }

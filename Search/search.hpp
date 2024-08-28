@@ -14,6 +14,7 @@ struct tt {
     int depth;
     int flags;
     int score;
+    int bestMove;
 };
 
 class Search {
@@ -24,8 +25,8 @@ class Search {
         static void searchPosition(int depth);
         static inline void enablePvScore(moves *moveList);
         static void clearTranspositionTable();
-        static int readHashEntry(int alpha, int beta, int depth);
-        static void writeHashEntry(int score, int depth, int flag);
+        static int readHashEntry(int alpha, int beta, int* bestMove, int depth);
+        static void writeHashEntry(int score, int bestMove, int depth, int flag);
         static inline bool isRepetition();
         static void initHashTable(int mb);
 
@@ -37,6 +38,7 @@ class Search {
         static int pvTable[maxPly][maxPly];
         static bool followPv;
         static bool scorePv;
+        static int fifty;
 
         static int hashEntries;
 

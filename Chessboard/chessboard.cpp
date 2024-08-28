@@ -61,13 +61,12 @@ void Chessboard::init() {
 
     initCharPieces();
     initRandomKeys();
-    Evaluation::initEvalMasks();
 
     init_nnue("nn-62ef826d1a6d.nnue");
 
     Search::initHashTable(64); // Default value of 64MB
 
-    bool debug = true;
+    bool debug = false;
 
     if (debug) {
         parseFEN(startPosition);
@@ -143,9 +142,7 @@ uint64_t Chessboard::generateHashKey() {
     return finalKey;
 }
 
-// Parse the FEN string
-void Chessboard::parseFEN(char *fen) {
-
+void Chessboard::resetBoard() {
     // Reset board position and state variables
     memset(bitboard.bitboards, 0ULL, sizeof(bitboard.bitboards));
     memset(bitboard.occupancies, 0ULL, sizeof(bitboard.occupancies));
@@ -155,7 +152,16 @@ void Chessboard::parseFEN(char *fen) {
     bitboard.castlingRights = 0;
 
     Search::repetitionIndex = 0;
+
+    Search::fifty = 0;
+
     memset(Search::repetitionTable, 0ULL, sizeof(Search::repetitionTable));
+}
+
+// Parse the FEN string
+void Chessboard::parseFEN(char *fen) {
+
+    resetBoard();
 
     for (int rank = 0; rank < 8; rank++){
         for (int file = 0; file < 8; file++){
@@ -295,6 +301,8 @@ void Chessboard::printBoard() {
     std::cout << "Castling:             " << (bitboard.castlingRights & wk ? "K" : "-") << (bitboard.castlingRights & wq ? "Q" : "-") << (bitboard.castlingRights & bk ? "k" : "-") << (bitboard.castlingRights & bq ? "q" : "-") << std::endl;
 
     std::cout << "Hash Key:             " << std::hex << hashKey << std::dec << std::endl;
+
+    std::cout << "Fifty:                " << std::hex << Search::fifty << std::dec << std::endl;
 
     std::cout << std::endl;
 }
@@ -695,7 +703,14 @@ int Chessboard::makeMove(int move, int moveFlag) {
 
         hashKey ^= pieceKeys[piece][sourceSquare] ^ pieceKeys[piece][targetSquare];
 
+        Search::fifty++;
+
+        if (piece == P || piece == p) {
+            Search::fifty = 0;
+        }
+
         if (getMoveCapture(move) != 13) {
+            Search::fifty = 0;
             int startPiece, endPiece;
 
             if (bitboard.sideToMove == white) {
@@ -1083,18 +1098,26 @@ void Chessboard::parseGo(char *command) {
 
         time /= movesToGo;
 
-        if (time > 1500) { time -= 50; }
+        time -= 50;
+
+        if (time < 0) {
+
+            time = 0;
+
+            inc -= 50;
+
+            if (inc < 0) { inc = 1; }
+        }
 
         stopTime = startTime + time + inc;
 
-        if (time < 1500 && inc && depth == 64) { stopTime = startTime + inc - 50; }
     }
 
     if (depth == -1) {
         depth = 64;
     }
 
-    std::cout << "time:" << time << " start:" << startTime << " stop:" << stopTime << " depth:" << depth << " timeset:" << timeSet << std::endl;
+    std::cout << "time:" << time << " inc:" << inc << " start:" << startTime << " stop:" << stopTime << " depth:" << depth << " timeset:" << timeSet << std::endl;
 
     Search::searchPosition(depth);
 }
@@ -1211,7 +1234,7 @@ void Chessboard::uciLoop() {
         }
 
         else if (strncmp(input, "uci", 3) == 0) {
-            std::cout << "id name Iris" << version << std::endl;
+            std::cout << "id name Iris " << version << std::endl;
             std::cout << "id author Redux" << std::endl;
             std::cout << "uciok" << std::endl;
         }

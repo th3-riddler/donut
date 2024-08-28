@@ -47,12 +47,13 @@
 
 #define copyBoard()                                                     \
     uint64_t bitboardsCopy[12], occupanciesCopy[3];                     \
-    int sideCopy, enPassantSquareCopy, castlingRightsCopy;              \
+    int sideCopy, enPassantSquareCopy, castlingRightsCopy, fiftyCopy;   \
     memcpy(bitboardsCopy, Chessboard::bitboard.bitboards, 96);          \
     memcpy(occupanciesCopy, Chessboard::bitboard.occupancies, 24);      \
     sideCopy = Chessboard::bitboard.sideToMove;                         \
     enPassantSquareCopy = Chessboard::bitboard.enPassantSquare;         \
     castlingRightsCopy = Chessboard::bitboard.castlingRights;           \
+    fiftyCopy = Search::fifty;                                          \
     uint64_t hashKeyCopy = Chessboard::hashKey;                         \
 
 #define takeBack()                                                      \
@@ -61,6 +62,7 @@
     Chessboard::bitboard.sideToMove = sideCopy;                         \
     Chessboard::bitboard.enPassantSquare = enPassantSquareCopy;         \
     Chessboard::bitboard.castlingRights = castlingRightsCopy;           \
+    Search::fifty = fiftyCopy;                                          \
     Chessboard::hashKey = hashKeyCopy;                                  \
 
 #define maxPly 64
@@ -77,6 +79,6 @@
 
 #define infinity 50000
 
-#define version "1.1"
+#define version "1.4"
 
 #endif // BITWISE_OPERATIONS_H
