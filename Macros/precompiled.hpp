@@ -1,5 +1,6 @@
 #include "../Evaluation/evaluation.hpp"
 #include "../Chessboard/chessboard.hpp"
+#include "../nnueEval/nnueEval.hpp"
 #include "../Search/search.hpp"
 #include "../Move/move.hpp"
 #include "bitboard.hpp"

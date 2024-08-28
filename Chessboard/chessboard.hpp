@@ -19,6 +19,7 @@
 #include "../Macros/macros.hpp"
 #include "../Search/search.hpp"
 #include "../Evaluation/evaluation.hpp"
+#include "../nnueEval/nnueEval.hpp"
 
 class Move;
 class Evaluation;
@@ -27,7 +28,7 @@ struct tt;
 
 class Chessboard {
     public:
-        static void parseFEN(const char *fen);
+        static void parseFEN(char *fen);
 
         static BitBoard bitboard;
         static uint64_t nodes;

@@ -63,14 +63,17 @@ void Chessboard::init() {
     initRandomKeys();
     Evaluation::initEvalMasks();
 
+    init_nnue("nn-62ef826d1a6d.nnue");
+
     Search::initHashTable(64); // Default value of 64MB
 
     bool debug = true;
 
     if (debug) {
-        parseFEN("r3k2r/p1ppqpb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPB1PPP/R3K2R w KQkq - 0 1");
+        parseFEN(startPosition);
         printBoard();
-        std::cout << "Score: " << Evaluation::evaluate() << std::endl; // 47
+
+        std::cout << "Score from FEN: " << evaluate_fen_nnue(startPosition) << std::endl;
 
         // int start = getTimeMs();
         // Search::searchPosition(10);
@@ -131,7 +134,7 @@ uint64_t Chessboard::generateHashKey() {
 }
 
 // Parse the FEN string
-void Chessboard::parseFEN(const char *fen) {
+void Chessboard::parseFEN(char *fen) {
 
     // Reset board position and state variables
     memset(bitboard.bitboards, 0ULL, sizeof(bitboard.bitboards));

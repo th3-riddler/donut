@@ -139,6 +139,17 @@ const int Evaluation::positionalScore[2][6][64] =
     -53, -34, -21, -11, -28, -14, -24, -43
 };
 
+const int Evaluation::getRank[64] = {
+    7, 7, 7, 7, 7, 7, 7, 7,
+    6, 6, 6, 6, 6, 6, 6, 6,
+    5, 5, 5, 5, 5, 5, 5, 5,
+    4, 4, 4, 4, 4, 4, 4, 4,
+    3, 3, 3, 3, 3, 3, 3, 3,
+    2, 2, 2, 2, 2, 2, 2, 2,
+    1, 1, 1, 1, 1, 1, 1, 1,
+	0, 0, 0, 0, 0, 0, 0, 0
+};
+
 const int Evaluation::doublePawnPenaltyOpening = -5;
 const int Evaluation::doublePawnPenaltyEndgame = -10;
 

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "../Chessboard/chessboard.hpp"
+#include "../nnueEval/nnueEval.hpp"
 
 class Evaluation {
     public:

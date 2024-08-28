@@ -3,6 +3,7 @@
 
 #include "../Evaluation/evaluation.hpp"
 #include "../Chessboard/chessboard.hpp"
+#include "../nnueEval/nnueEval.hpp"
 #include "../Macros/macros.hpp"
 #include "../Move/move.hpp"
 

@@ -14,17 +14,17 @@
 // Macro to check if a bit at a given position is set
 #define GET_BIT(board, square) (((board) & (1ULL << (square))) != 0)
 
-#define emptyBoard (const char*)"8/8/8/8/8/8/8/8 w - - "
+#define emptyBoard (char*)"8/8/8/8/8/8/8/8 w - - "
 
-#define startPosition (const char*)"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+#define startPosition (char*)"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-#define trickyPosition (const char*)"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+#define trickyPosition (char*)"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
 
-#define killerPosition (const char*)"rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
+#define killerPosition (char*)"rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1"
 
-#define cmkPosition (const char*)"r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9"
+#define cmkPosition (char*)"r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9"
 
-#define repetitionPosition (const char*)"2r3k1/R7/8/1R6/8/8/P4KPP/8 w - - 0 40"
+#define repetitionPosition (char*)"2r3k1/R7/8/1R6/8/8/P4KPP/8 w - - 0 40"
 
 #define encodeMove(source, target, piece, promoted, capture, doublePush, enPassant, castling) \
     ((source) | ((target) << 6) | ((piece) << 12) | ((promoted) << 16) | ((capture) << 20) | ((doublePush) << 24) | ((enPassant) << 25) | ((castling) << 26))
