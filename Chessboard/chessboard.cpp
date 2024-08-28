@@ -75,6 +75,16 @@ void Chessboard::init() {
 
         std::cout << "Score from FEN: " << evaluate_fen_nnue(startPosition) << std::endl;
 
+        int pieces[33];
+        int squares[33];
+
+        Evaluation::nnueInput(pieces, squares);
+        int score = evaluate_nnue(bitboard.sideToMove, pieces, squares);
+        std::cout << "Score direct: " << score << std::endl;
+
+        int evalScore = Evaluation::evaluate();
+        std::cout << "Eval score: " << evalScore << std::endl;
+
         // int start = getTimeMs();
         // Search::searchPosition(10);
         // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;

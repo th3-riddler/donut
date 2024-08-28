@@ -55,6 +55,11 @@ class Evaluation {
         static void initEvalMasks();
         static inline int getGamePhaseScore();
 
+        static void nnueInput(int *pieces, int *squares);
+
+        static int nnuePieces[12];
+        static int nnueSquares[64];
+
         enum { opening, endgame, middlegame };
         enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 };

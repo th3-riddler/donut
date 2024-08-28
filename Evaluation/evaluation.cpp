@@ -9,7 +9,7 @@ const int Evaluation::materialScore[2][12] = {
 };
 
 const int Evaluation::openingPhaseScore = 6192;
-const int Evaluation::endgamePhaseScore = 518;
+const int Evaluation::endgamePhaseScore = 3500;
 
 const int Evaluation::positionalScore[2][6][64] =
 
@@ -181,6 +181,19 @@ const int Evaluation::mirrorPieceScore[128] = {
     Chessboard::a1, Chessboard::b1, Chessboard::c1, Chessboard::d1, Chessboard::e1, Chessboard::f1, Chessboard::g1, Chessboard::h1
 };
 
+int Evaluation::nnuePieces[12] = { 6, 5, 4, 3, 2, 1, 12, 11, 10, 9, 8, 7 };
+
+int Evaluation::nnueSquares[64] = {
+    Chessboard::a8, Chessboard::b8, Chessboard::c8, Chessboard::d8, Chessboard::e8, Chessboard::f8, Chessboard::g8, Chessboard::h8,
+    Chessboard::a7, Chessboard::b7, Chessboard::c7, Chessboard::d7, Chessboard::e7, Chessboard::f7, Chessboard::g7, Chessboard::h7,
+    Chessboard::a6, Chessboard::b6, Chessboard::c6, Chessboard::d6, Chessboard::e6, Chessboard::f6, Chessboard::g6, Chessboard::h6,
+    Chessboard::a5, Chessboard::b5, Chessboard::c5, Chessboard::d5, Chessboard::e5, Chessboard::f5, Chessboard::g5, Chessboard::h5,
+    Chessboard::a4, Chessboard::b4, Chessboard::c4, Chessboard::d4, Chessboard::e4, Chessboard::f4, Chessboard::g4, Chessboard::h4,
+    Chessboard::a3, Chessboard::b3, Chessboard::c3, Chessboard::d3, Chessboard::e3, Chessboard::f3, Chessboard::g3, Chessboard::h3,
+    Chessboard::a2, Chessboard::b2, Chessboard::c2, Chessboard::d2, Chessboard::e2, Chessboard::f2, Chessboard::g2, Chessboard::h2,
+    Chessboard::a1, Chessboard::b1, Chessboard::c1, Chessboard::d1, Chessboard::e1, Chessboard::f1, Chessboard::g1, Chessboard::h1
+};
+
 const int Evaluation::mvvLva[12][12] = {
     105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605,
 	104, 204, 304, 404, 504, 604,  104, 204, 304, 404, 504, 604,
@@ -322,6 +335,39 @@ inline int Evaluation::getGamePhaseScore() {
     return whitePieceScore + blackPieceScore;
 }
 
+void Evaluation::nnueInput(int *pieces, int *squares) {
+    uint64_t bitboardCopy;
+    int piece, square;
+    int index = 2;
+
+    for (int bbPiece = Chessboard::P; bbPiece <= Chessboard::k; bbPiece++) {
+        bitboardCopy = Chessboard::bitboard.bitboards[bbPiece];
+
+        while (bitboardCopy) {
+            piece = bbPiece;
+            square = Chessboard::getLSBIndex(bitboardCopy);
+
+            if (piece == Chessboard::K) {
+                pieces[0] = nnuePieces[piece];
+                squares[0] = square;
+            }
+            else if (piece == Chessboard::k) {
+                pieces[1] = nnuePieces[piece];
+                squares[1] = square;
+            }
+            else {
+                pieces[index] = nnuePieces[piece];
+                squares[index] = square;
+                index++;
+            }
+
+            CLEAR_BIT(bitboardCopy, square);
+        }
+    }
+    pieces[index] = 0;
+    squares[index] = 0;
+}
+
 int Evaluation::evaluate() {
 
     int gamePhaseScore = getGamePhaseScore();
@@ -340,6 +386,10 @@ int Evaluation::evaluate() {
 
     int doublePawns = 0;
 
+    int pieces[33];
+    int squares[33];
+    int index = 2;
+
     for (int bbPiece = Chessboard::P; bbPiece <= Chessboard::k; bbPiece++) {
         bitboardCopy = Chessboard::bitboard.bitboards[bbPiece];
 
@@ -347,204 +397,228 @@ int Evaluation::evaluate() {
             piece = bbPiece;
             square = Chessboard::getLSBIndex(bitboardCopy);
 
-            // Get Opening and Endgame material scores
-            scoreOpening += materialScore[opening][piece];
-            scoreEndgame += materialScore[endgame][piece];
-            
-            switch (piece) {
-                case Chessboard::P:
-
-                    // Get Opening and Endgame positional scores
-                    scoreOpening += positionalScore[opening][PAWN][mirrorPieceScore[square]];
-                    scoreEndgame += positionalScore[endgame][PAWN][mirrorPieceScore[square]];
-                    
-                    doublePawns = Chessboard::countBits(Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]);
-                    if (doublePawns > 1) {
-                        scoreOpening += (doublePawns - 1) * doublePawnPenaltyOpening;
-                        scoreEndgame += (doublePawns - 1) * doublePawnPenaltyEndgame;
-                    }
-
-                    if ((Chessboard::bitboard.bitboards[Chessboard::P] & isolatedMasks[square]) == 0) {
-                        scoreOpening += isolatedPawnPenaltyOpening;
-                        scoreEndgame += isolatedPawnPenaltyEndgame;
-                    }
-
-                    if ((whitePassedMasks[square] & Chessboard::bitboard.bitboards[Chessboard::p]) == 0) {
-                        scoreOpening += passedPawnBonus[getRank[mirrorPieceScore[square]]];
-                        scoreEndgame += passedPawnBonus[getRank[mirrorPieceScore[square]]];
-                    }
-                    
-                    break;
-                case Chessboard::N: 
-
-                    // Get Opening and Endgame positional scores
-                    scoreOpening += positionalScore[opening][KNIGHT][mirrorPieceScore[square]];
-                    scoreEndgame += positionalScore[endgame][KNIGHT][mirrorPieceScore[square]];
-
-                    break;
-                case Chessboard::B: 
-                    
-                    // Get Opening and Endgame positional scores
-                    scoreOpening += positionalScore[opening][BISHOP][mirrorPieceScore[square]];
-                    scoreEndgame += positionalScore[endgame][BISHOP][mirrorPieceScore[square]];
-
-                    // Mobility
-                    scoreOpening += (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityOpening;
-                    scoreEndgame += (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityEndgame;
-
-                    break;
-
-                case Chessboard::R:
-
-                    // Get Opening and Endgame positional scores
-                    scoreOpening += positionalScore[opening][ROOK][mirrorPieceScore[square]];
-                    scoreEndgame += positionalScore[endgame][ROOK][mirrorPieceScore[square]];
-
-                    if ((Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]) == 0) {
-                        scoreOpening += semiOpenFileBonus;
-                        scoreEndgame += semiOpenFileBonus;
-                    }
-
-                    if (((Chessboard::bitboard.bitboards[Chessboard::P] | Chessboard::bitboard.bitboards[Chessboard::p]) & fileMasks[square]) == 0) {
-                        scoreOpening += openFileBonus;
-                        scoreEndgame += openFileBonus;
-                    }
-                    
-                    break;
-
-                case Chessboard::Q:
-                    
-                    // Get Opening and Endgame positional scores
-                    scoreOpening += positionalScore[opening][QUEEN][mirrorPieceScore[square]];
-                    scoreEndgame += positionalScore[endgame][QUEEN][mirrorPieceScore[square]];
-
-                    // Mobility
-                    scoreOpening += (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityOpening;
-                    scoreEndgame += (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityEndgame;
-
-                    break;
-                
-                case Chessboard::K: 
-                    
-                    // Get Opening and Endgame positional scores
-                    scoreOpening += positionalScore[opening][KING][mirrorPieceScore[square]];
-                    scoreEndgame += positionalScore[endgame][KING][mirrorPieceScore[square]];
-
-                    if ((Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]) == 0) {
-                        scoreOpening -= semiOpenFileBonus;
-                        scoreEndgame -= semiOpenFileBonus;
-                    }
-                    
-                    if (((Chessboard::bitboard.bitboards[Chessboard::P] | Chessboard::bitboard.bitboards[Chessboard::p]) & fileMasks[square]) == 0) {
-                        scoreOpening -= openFileBonus;
-                        scoreEndgame -= openFileBonus;
-                    }
-                    
-                    scoreOpening += Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::white]) * kingShieldBonus;
-                    scoreEndgame += Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::white]) * kingShieldBonus;
-
-                    break;
-
-                case Chessboard::p:
-
-                    // Get Opening and Endgame positional scores
-                    scoreOpening -= positionalScore[opening][PAWN][square];
-                    scoreEndgame -= positionalScore[endgame][PAWN][square];
-
-                    doublePawns = Chessboard::countBits(Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]);
-                    if (doublePawns > 1) {
-                        scoreOpening -= (doublePawns - 1) * doublePawnPenaltyOpening;
-                        scoreEndgame -= (doublePawns - 1) * doublePawnPenaltyEndgame;
-                    }
-
-                    if ((Chessboard::bitboard.bitboards[Chessboard::p] & isolatedMasks[square]) == 0) {
-                        scoreOpening -= isolatedPawnPenaltyOpening;
-                        scoreEndgame -= isolatedPawnPenaltyEndgame;
-                    }
-
-                    if ((blackPassedMasks[square] & Chessboard::bitboard.bitboards[Chessboard::P]) == 0) {
-                        scoreOpening -= passedPawnBonus[getRank[square]];
-                        scoreEndgame -= passedPawnBonus[getRank[square]];
-                    }
-
-                    break;
-
-                case Chessboard::n:
-
-                    // Get Opening and Endgame positional scores
-                    scoreOpening -= positionalScore[opening][KNIGHT][square];
-                    scoreEndgame -= positionalScore[endgame][KNIGHT][square];
-
-                    break;
-
-                case Chessboard::b:
-
-                    // Get Opening and Endgame positional scores
-                    scoreOpening -= positionalScore[opening][BISHOP][square];
-                    scoreEndgame -= positionalScore[endgame][BISHOP][square];
-                    
-                    // Mobility
-                    scoreOpening -= (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityOpening;
-                    scoreEndgame -= (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityEndgame;
-
-                    break;
-
-                case Chessboard::r: 
-                    
-                    // Get Opening and Endgame positional scores
-                    scoreOpening -= positionalScore[opening][ROOK][square];
-                    scoreEndgame -= positionalScore[endgame][ROOK][square];
-
-                    if ((Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]) == 0) {
-                        scoreOpening -= semiOpenFileBonus;
-                        scoreEndgame -= semiOpenFileBonus;
-                    }
-
-                    if (((Chessboard::bitboard.bitboards[Chessboard::p] | Chessboard::bitboard.bitboards[Chessboard::P]) & fileMasks[square]) == 0) {
-                        scoreOpening -= openFileBonus;
-                        scoreEndgame -= openFileBonus;
-                    }
-
-                    break;
-
-                case Chessboard::q:
-                    
-                    // Get Opening and Endgame positional scores
-                    scoreOpening -= positionalScore[opening][QUEEN][square];
-                    scoreEndgame -= positionalScore[endgame][QUEEN][square];
-
-                    // Mobility
-                    scoreOpening -= (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityOpening;
-                    scoreEndgame -= (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityEndgame;
-
-                    break;
-
-                case Chessboard::k: 
-                    
-                    // Get Opening and Endgame positional scores
-                    scoreOpening -= positionalScore[opening][KING][square];
-                    scoreEndgame -= positionalScore[endgame][KING][square];
-
-                    if ((Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]) == 0) {
-                        scoreOpening += semiOpenFileBonus;
-                        scoreEndgame += semiOpenFileBonus;
-                    }
-
-                    if (((Chessboard::bitboard.bitboards[Chessboard::p] | Chessboard::bitboard.bitboards[Chessboard::P]) & fileMasks[square]) == 0) {
-                        scoreOpening += openFileBonus;
-                        scoreEndgame += openFileBonus;
-                    }
-
-                    score -= Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::black]) * kingShieldBonus;
-                    
-                    break;
+            // In opening and middlegame, use NNUE Evaluation
+            if (gamePhase != endgame) {
+                if (piece == Chessboard::K) {
+                pieces[0] = nnuePieces[piece];
+                squares[0] = square;
+                }
+                else if (piece == Chessboard::k) {
+                    pieces[1] = nnuePieces[piece];
+                    squares[1] = square;
+                }
+                else {
+                    pieces[index] = nnuePieces[piece];
+                    squares[index] = square;
+                    index++;
+                }
             }
+            // In endgame, use handcrafted evaluation
+            else {
 
+                // Get Opening and Endgame material scores
+                scoreOpening += materialScore[opening][piece];
+                scoreEndgame += materialScore[endgame][piece];
 
+                switch (piece) {
+                    case Chessboard::P:
+
+                        // Get Opening and Endgame positional scores
+                        scoreOpening += positionalScore[opening][PAWN][mirrorPieceScore[square]];
+                        scoreEndgame += positionalScore[endgame][PAWN][mirrorPieceScore[square]];
+                        
+                        doublePawns = Chessboard::countBits(Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]);
+                        if (doublePawns > 1) {
+                            scoreOpening += (doublePawns - 1) * doublePawnPenaltyOpening;
+                            scoreEndgame += (doublePawns - 1) * doublePawnPenaltyEndgame;
+                        }
+
+                        if ((Chessboard::bitboard.bitboards[Chessboard::P] & isolatedMasks[square]) == 0) {
+                            scoreOpening += isolatedPawnPenaltyOpening;
+                            scoreEndgame += isolatedPawnPenaltyEndgame;
+                        }
+
+                        if ((whitePassedMasks[square] & Chessboard::bitboard.bitboards[Chessboard::p]) == 0) {
+                            scoreOpening += passedPawnBonus[getRank[mirrorPieceScore[square]]];
+                            scoreEndgame += passedPawnBonus[getRank[mirrorPieceScore[square]]];
+                        }
+                        
+                        break;
+                    
+                    case Chessboard::N: 
+
+                        // Get Opening and Endgame positional scores
+                        scoreOpening += positionalScore[opening][KNIGHT][mirrorPieceScore[square]];
+                        scoreEndgame += positionalScore[endgame][KNIGHT][mirrorPieceScore[square]];
+
+                        break;
+                    
+                    case Chessboard::B: 
+                        
+                        // Get Opening and Endgame positional scores
+                        scoreOpening += positionalScore[opening][BISHOP][mirrorPieceScore[square]];
+                        scoreEndgame += positionalScore[endgame][BISHOP][mirrorPieceScore[square]];
+
+                        // Mobility
+                        scoreOpening += (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityOpening;
+                        scoreEndgame += (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityEndgame;
+
+                        break;
+
+                    case Chessboard::R:
+
+                        // Get Opening and Endgame positional scores
+                        scoreOpening += positionalScore[opening][ROOK][mirrorPieceScore[square]];
+                        scoreEndgame += positionalScore[endgame][ROOK][mirrorPieceScore[square]];
+
+                        if ((Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]) == 0) {
+                            scoreOpening += semiOpenFileBonus;
+                            scoreEndgame += semiOpenFileBonus;
+                        }
+
+                        if (((Chessboard::bitboard.bitboards[Chessboard::P] | Chessboard::bitboard.bitboards[Chessboard::p]) & fileMasks[square]) == 0) {
+                            scoreOpening += openFileBonus;
+                            scoreEndgame += openFileBonus;
+                        }
+                        
+                        break;
+
+                    case Chessboard::Q:
+                        
+                        // Get Opening and Endgame positional scores
+                        scoreOpening += positionalScore[opening][QUEEN][mirrorPieceScore[square]];
+                        scoreEndgame += positionalScore[endgame][QUEEN][mirrorPieceScore[square]];
+
+                        // Mobility
+                        scoreOpening += (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityOpening;
+                        scoreEndgame += (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityEndgame;
+
+                        break;
+                    
+                    case Chessboard::K: 
+                        
+                        // Get Opening and Endgame positional scores
+                        scoreOpening += positionalScore[opening][KING][mirrorPieceScore[square]];
+                        scoreEndgame += positionalScore[endgame][KING][mirrorPieceScore[square]];
+
+                        if ((Chessboard::bitboard.bitboards[Chessboard::P] & fileMasks[square]) == 0) {
+                            scoreOpening -= semiOpenFileBonus;
+                            scoreEndgame -= semiOpenFileBonus;
+                        }
+                        
+                        if (((Chessboard::bitboard.bitboards[Chessboard::P] | Chessboard::bitboard.bitboards[Chessboard::p]) & fileMasks[square]) == 0) {
+                            scoreOpening -= openFileBonus;
+                            scoreEndgame -= openFileBonus;
+                        }
+                        
+                        scoreOpening += Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::white]) * kingShieldBonus;
+                        scoreEndgame += Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::white]) * kingShieldBonus;
+
+                        break;
+
+                    case Chessboard::p:
+
+                        // Get Opening and Endgame positional scores
+                        scoreOpening -= positionalScore[opening][PAWN][square];
+                        scoreEndgame -= positionalScore[endgame][PAWN][square];
+
+                        doublePawns = Chessboard::countBits(Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]);
+                        if (doublePawns > 1) {
+                            scoreOpening -= (doublePawns - 1) * doublePawnPenaltyOpening;
+                            scoreEndgame -= (doublePawns - 1) * doublePawnPenaltyEndgame;
+                        }
+
+                        if ((Chessboard::bitboard.bitboards[Chessboard::p] & isolatedMasks[square]) == 0) {
+                            scoreOpening -= isolatedPawnPenaltyOpening;
+                            scoreEndgame -= isolatedPawnPenaltyEndgame;
+                        }
+
+                        if ((blackPassedMasks[square] & Chessboard::bitboard.bitboards[Chessboard::P]) == 0) {
+                            scoreOpening -= passedPawnBonus[getRank[square]];
+                            scoreEndgame -= passedPawnBonus[getRank[square]];
+                        }
+
+                        break;
+
+                    case Chessboard::n:
+
+                        // Get Opening and Endgame positional scores
+                        scoreOpening -= positionalScore[opening][KNIGHT][square];
+                        scoreEndgame -= positionalScore[endgame][KNIGHT][square];
+
+                        break;
+
+                    case Chessboard::b:
+
+                        // Get Opening and Endgame positional scores
+                        scoreOpening -= positionalScore[opening][BISHOP][square];
+                        scoreEndgame -= positionalScore[endgame][BISHOP][square];
+                        
+                        // Mobility
+                        scoreOpening -= (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityOpening;
+                        scoreEndgame -= (Chessboard::countBits(Move::getBishopAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - bishopUnit) * bishopMobilityEndgame;
+
+                        break;
+
+                    case Chessboard::r: 
+                        
+                        // Get Opening and Endgame positional scores
+                        scoreOpening -= positionalScore[opening][ROOK][square];
+                        scoreEndgame -= positionalScore[endgame][ROOK][square];
+
+                        if ((Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]) == 0) {
+                            scoreOpening -= semiOpenFileBonus;
+                            scoreEndgame -= semiOpenFileBonus;
+                        }
+
+                        if (((Chessboard::bitboard.bitboards[Chessboard::p] | Chessboard::bitboard.bitboards[Chessboard::P]) & fileMasks[square]) == 0) {
+                            scoreOpening -= openFileBonus;
+                            scoreEndgame -= openFileBonus;
+                        }
+
+                        break;
+
+                    case Chessboard::q:
+                        
+                        // Get Opening and Endgame positional scores
+                        scoreOpening -= positionalScore[opening][QUEEN][square];
+                        scoreEndgame -= positionalScore[endgame][QUEEN][square];
+
+                        // Mobility
+                        scoreOpening -= (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityOpening;
+                        scoreEndgame -= (Chessboard::countBits(Move::getQueenAttacks(square, Chessboard::bitboard.occupancies[Chessboard::both])) - queenUnit) * queenMobilityEndgame;
+
+                        break;
+
+                    case Chessboard::k: 
+                        
+                        // Get Opening and Endgame positional scores
+                        scoreOpening -= positionalScore[opening][KING][square];
+                        scoreEndgame -= positionalScore[endgame][KING][square];
+
+                        if ((Chessboard::bitboard.bitboards[Chessboard::p] & fileMasks[square]) == 0) {
+                            scoreOpening += semiOpenFileBonus;
+                            scoreEndgame += semiOpenFileBonus;
+                        }
+
+                        if (((Chessboard::bitboard.bitboards[Chessboard::p] | Chessboard::bitboard.bitboards[Chessboard::P]) & fileMasks[square]) == 0) {
+                            scoreOpening += openFileBonus;
+                            scoreEndgame += openFileBonus;
+                        }
+
+                        score -= Chessboard::countBits(Move::kingAttacks[square] & Chessboard::bitboard.occupancies[Chessboard::black]) * kingShieldBonus;
+                        
+                        break;
+                }
+            }
             CLEAR_BIT(bitboardCopy, square);
         }
     }
 
+    pieces[index] = 0;
+    squares[index] = 0;
+
+    int nnueScore = evaluate_nnue(Chessboard::bitboard.sideToMove, pieces, squares);
 
     /*          
         Now in order to calculate interpolated score
@@ -560,7 +634,7 @@ int Evaluation::evaluate() {
         interpolated_score = (12 * 5000 + (-7) * (6192 - 5000)) / 6192 = 8,342377261
     */
 
-    if (gamePhase == middlegame) {
+    /*if (gamePhase == middlegame) {
         score = (
             scoreOpening * gamePhaseScore +
             scoreEndgame * (openingPhaseScore - gamePhaseScore)
@@ -569,5 +643,13 @@ int Evaluation::evaluate() {
     else if (gamePhase == opening) { score = scoreOpening; }
     else if (gamePhase == endgame) { score = scoreEndgame; }
 
-    return ((Chessboard::bitboard.sideToMove == Chessboard::white) ? score : -score);
+    // return ((Chessboard::bitboard.sideToMove == Chessboard::white) ? score : -score);
+    */
+
+    if (gamePhase != endgame) {
+       return nnueScore; 
+    }
+    else {
+        return ((Chessboard::bitboard.sideToMove == Chessboard::white) ? scoreEndgame : -scoreEndgame);
+    }
 }
