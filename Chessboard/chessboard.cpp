@@ -69,24 +69,12 @@ void Chessboard::init() {
     bool debug = false;
 
     if (debug) {
-        parseFEN(startPosition);
+        parseFEN("rnbqkb1r/p3p1pp/5n2/8/2BPp3/8/1P3PPP/RNBQK2R w KQkq - 1 10");
         printBoard();
+        Evaluation::evaluate();
 
-        std::cout << "Score from FEN: " << evaluate_fen_nnue(startPosition) << std::endl;
-
-        int pieces[33];
-        int squares[33];
-
-        Evaluation::nnueInput(pieces, squares);
-        int score = evaluate_nnue(bitboard.sideToMove, pieces, squares);
-        std::cout << "Score direct: " << score << std::endl;
-
-        int evalScore = Evaluation::evaluate();
-        std::cout << "Eval score: " << evalScore << std::endl;
-
-        // int start = getTimeMs();
-        // Search::searchPosition(10);
-        // std::cout << "Time: " << getTimeMs() - start << "ms" << std::endl;
+        // int evalScore = evaluate_fen_nnue("rnbqkb1r/p3p1pp/5n2/8/2BPp3/8/1P3PPP/RNBQK2R w KQkq - 1 10");
+        // std::cout << "Eval score: " << evalScore << std::endl;
     }
     else {
         uciLoop();
@@ -228,6 +216,9 @@ void Chessboard::parseFEN(char *fen) {
         bitboard.enPassantSquare = Chessboard::noSquare;
     }
 
+    fen++;
+
+    Search::fifty = atoi(fen);
 
     // Initialize white occupancies
     for (int piece = P; piece <= K; piece++) {
@@ -1117,7 +1108,7 @@ void Chessboard::parseGo(char *command) {
         depth = 64;
     }
 
-    std::cout << "time:" << time << " inc:" << inc << " start:" << startTime << " stop:" << stopTime << " depth:" << depth << " timeset:" << timeSet << std::endl;
+    std::cout << "time: " << time << " inc: " << inc << " start: " << startTime << " stop: " << stopTime << " depth: " << depth << " timeset: " << timeSet << std::endl;
 
     Search::searchPosition(depth);
 }

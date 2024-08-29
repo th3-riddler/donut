@@ -1,23 +1,14 @@
 #ifndef MISC_H
 #define MISC_H
 
-#ifdef _MSC_VER
-#  define _CRT_SECURE_NO_WARNINGS
-#  pragma warning (disable: 4996)
-#endif
-
 #include <inttypes.h>
 
 #ifdef _WIN32
 #  include <windows.h>
 #else
-#  include <unistd.h>
 #  include <sys/mman.h>
 #endif
 
-/*
-Force inline
-*/
 #if defined (__GNUC__)
 #   define INLINE  __inline __attribute__((always_inline))
 #elif defined (_WIN32)
@@ -25,26 +16,6 @@ Force inline
 #else
 #   define INLINE  __inline
 #endif
-
-/*
-Intrinsic bsf
-*/
-#   if defined(__GNUC__)
-#       define bsf(b) __builtin_ctzll(b)
-#       define bsr(b) (63 - __builtin_clzll(b))
-#   elif defined(_WIN32)
-#       include <intrin.h>
-        INLINE int bsf(uint64_t b) {
-            unsigned long x;
-            _BitScanForward64(&x, b);
-            return (int) x;
-        }
-        INLINE int bsr(uint64_t b) {
-            unsigned long x;
-            _BitScanReverse64(&x, b);
-            return (int) x;
-        }
-#   endif
 
 #ifdef _WIN32
 
@@ -56,13 +27,13 @@ typedef HANDLE map_t;
 
 typedef int FD;
 #define FD_ERR -1
-typedef std::size_t map_t;
+typedef size_t map_t;
 
 #endif
 
 FD open_file(const char *name);
 void close_file(FD fd);
-std::size_t file_size(FD fd);
+size_t file_size(FD fd);
 const void *map_file(FD fd, map_t *map);
 void unmap_file(const void *data, map_t map);
 

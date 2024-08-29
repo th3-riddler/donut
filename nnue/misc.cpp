@@ -1,9 +1,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <cstddef>
 
 #include "misc.h"
 
@@ -26,7 +26,7 @@ void close_file(FD fd)
 #endif
 }
 
-std::size_t file_size(FD fd)
+size_t file_size(FD fd)
 {
 #ifndef _WIN32
   struct stat statbuf;
@@ -44,11 +44,11 @@ const void *map_file(FD fd, map_t *map)
 #ifndef _WIN32
 
   *map = file_size(fd);
-  void *data = mmap(nullptr, *map, PROT_READ, MAP_SHARED, fd, 0);
+  void *data = mmap(NULL, *map, PROT_READ, MAP_SHARED, fd, 0);
 #ifdef MADV_RANDOM
   madvise(data, *map, MADV_RANDOM);
 #endif
-  return data == MAP_FAILED ? nullptr : data;
+  return data == MAP_FAILED ? NULL : data;
 
 #else
 
@@ -97,7 +97,7 @@ void decode_fen(const char* fen_str, int* player, int* castle,
       for(int f = 0;f <= 7;f++) {
           sq = r * 8 + f;
           if((pfen = strchr(piece_name,*p)) != 0) {
-              int pc = (int)(strchr(piece_name,*pfen) - piece_name);
+              int pc = int(strchr(piece_name,*pfen) - piece_name);
               if(pc == 1) {
                  piece[0] = pc;
                  square[0] = sq;
@@ -144,9 +144,9 @@ void decode_fen(const char* fen_str, int* player, int* castle,
       epsquare = 0;
       p++;
   } else {
-      epsquare = (int)(strchr(file_name,*p) - file_name);
+      epsquare = int(strchr(file_name,*p) - file_name);
       p++;
-      epsquare += 16 * (int)(strchr(rank_name,*p) - rank_name);
+      epsquare += 16 * int(strchr(rank_name,*p) - rank_name);
       p++;
   }
   square[index] = epsquare;

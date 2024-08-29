@@ -646,11 +646,6 @@ void Move::sortMoves(moves *moveList, int bestMove)
         }
     }
     
-    // score all the moves within a move list
-    for (int count = 0; count < moveList->count; count++)
-        // score move
-        moveScores[count] = Evaluation::scoreMove(moveList->moves[count]);
-    
     // loop over current move within a move list
     for (int currentMove = 0; currentMove < moveList->count; currentMove++)
     {

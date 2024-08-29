@@ -192,7 +192,7 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     pvLength[ply] = ply;
 
-    int score = 0;
+    int score;
 
     // The best move to store in the Transoposition Table
     int bestMove = 0;
@@ -203,7 +203,7 @@ int Search::negamax(int alpha, int beta, int depth) {
         return 0;
     }
 
-    bool pvNode = (beta - alpha) > 1;
+    bool pvNode = beta - alpha > 1;
 
     if (ply && ((score = readHashEntry(alpha, beta, &bestMove, depth)) != noHashEntry) && !pvNode) {
         return score;
@@ -281,7 +281,7 @@ int Search::negamax(int alpha, int beta, int depth) {
 
     // Razoring
     if (!pvNode && !inCheck && depth <= 3) {
-        score = Evaluation::evaluate() + 125;
+        score = staticEval + 125;
 
         int newScore;
 
@@ -411,8 +411,9 @@ int Search::negamax(int alpha, int beta, int depth) {
 }
 
 void Search::searchPosition(int depth) {
-    Chessboard::nodes = 0;
+    int start = Chessboard::getTimeMs();
     int score = 0;
+    Chessboard::nodes = 0;
     Chessboard::stopped = false;
     followPv = false;
     scorePv = false;
@@ -446,10 +447,10 @@ void Search::searchPosition(int depth) {
 
         if (pvLength[0]) {
             if (score > -mateValue && score < -mateScore) {
-                std::cout << "info score mate " << -(score + mateValue) / 2 - 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+                std::cout << "info score mate " << -(score + mateValue) / 2 - 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - start << " pv ";
             }
             else if (score > mateScore && score < mateValue) {
-                std::cout << "info score mate " << (mateValue - score) / 2 + 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
+                std::cout << "info score mate " << (mateValue - score) / 2 + 1 << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - start << " pv ";
             }
             else {
                 std::cout << "info score cp " << score << " depth " << currentDepth << " nodes " << Chessboard::nodes << " time " << Chessboard::getTimeMs() - Chessboard::startTime << " pv ";
@@ -464,6 +465,11 @@ void Search::searchPosition(int depth) {
     }
 
     std::cout << "bestmove ";
-    Move::printMove(pvTable[0][0]);
+    if (pvTable[0][0]) {
+        Move::printMove(pvTable[0][0]);
+    }
+    else {
+        std::cout << "(none)";
+    }
     std::cout << std::endl;
 }
