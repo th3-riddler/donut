@@ -607,7 +607,11 @@ void Move::printMoveList(moves *moveList) {
 
 // Print a Move (in UCI format)
 void Move::printMove(int move) {
-    std::cout << Chessboard::squareToCoordinates[getMoveSource(move)] << Chessboard::squareToCoordinates[getMoveTarget(move)] << promotedPieces[getMovePromoted(move)];
+    if (promotedPieces[getMovePromoted(move)]) {
+        std::cout << Chessboard::squareToCoordinates[getMoveSource(move)] << Chessboard::squareToCoordinates[getMoveTarget(move)] << promotedPieces[getMovePromoted(move)];
+    } else {
+        std::cout << Chessboard::squareToCoordinates[getMoveSource(move)] << Chessboard::squareToCoordinates[getMoveTarget(move)];
+    }
 }
 
 // Print the score of each move

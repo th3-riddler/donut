@@ -1108,7 +1108,7 @@ void Chessboard::parseGo(char *command) {
         depth = 64;
     }
 
-    std::cout << "time: " << time << " inc: " << inc << " start: " << startTime << " stop: " << stopTime << " depth: " << depth << " timeset: " << timeSet << std::endl;
+    // std::cout << "time: " << time << " inc: " << inc << " start: " << startTime << " stop: " << stopTime << " depth: " << depth << " timeset: " << timeSet << std::endl;
 
     Search::searchPosition(depth);
 }
@@ -1224,7 +1224,7 @@ void Chessboard::uciLoop() {
         }
 
         else if (strncmp(input, "uci", 3) == 0) {
-            std::cout << "id name Orion" << std::endl;
+            std::cout << "id name Iris" << std::endl;
             std::cout << "id author Redux" << std::endl;
             std::cout << "option name Move Overhead type spin default " << moveOverhead << " min 0 max 0" << std::endl;
             std::cout << "option name Threads type spin default " << threads << " min 1 max " << maxThreads << std::endl;

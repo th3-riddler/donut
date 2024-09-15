@@ -464,12 +464,13 @@ void Search::searchPosition(int depth) {
         }
     }
 
-    std::cout << "bestmove ";
     if (pvTable[0][0]) {
+        std::cout << "bestmove ";
         Move::printMove(pvTable[0][0]);
+        std::cout << std::endl;
     }
     else {
-        std::cout << "(none)";
+        std::cout << "(none)" << std::endl;
     }
-    std::cout << std::endl;
+    // std::cout << std::endl;
 }
