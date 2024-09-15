@@ -2,7 +2,8 @@
 
 #include "evaluation.hpp"
 
-int Evaluation::nnuePieces[12] = { 6, 5, 4, 3, 2, 1, 12, 11, 10, 9, 8, 7 };
+// int Evaluation::nnuePieces[12] = { 6, 5, 4, 3, 2, 1, 12, 11, 10, 9, 8, 7 };
+int Evaluation::nnuePieces[12] = { 1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14 };
 
 const int Evaluation::mvvLva[12][12] = {
     105, 205, 305, 405, 505, 605,  105, 205, 305, 405, 505, 605,
@@ -59,44 +60,44 @@ int Evaluation::scoreMove(int move) {
 }
 
 int Evaluation::evaluate() {
-
-    uint64_t bitboardCopy;
     
-    int piece, square;
+    int pieceAmount = 0;
 
-    int pieces[33];
-    int squares[33];
-    int index = 2;
+    int pieces[32];
+    int squares[32];
+    int index = 0;
 
-    for (int bbPiece = Chessboard::P; bbPiece <= Chessboard::k; bbPiece++) {
-        bitboardCopy = Chessboard::bitboard.bitboards[bbPiece];
+    for (int square = 0; square < 64; square++) {
+        
+        for (int piece = Chessboard::P; piece <= Chessboard::k; piece++) {
+            if (!GET_BIT(Chessboard::bitboard.bitboards[piece], square)) {
+                continue;
+            }
 
-        while (bitboardCopy) {
-            piece = bbPiece;
-            square = Chessboard::getLSBIndex(bitboardCopy);
-           
-            if (piece == Chessboard::K) {
-                pieces[0] = nnuePieces[piece];
-                squares[0] = square;
-            }
-            else if (piece == Chessboard::k) {
-                pieces[1] = nnuePieces[piece];
-                squares[1] = square;
-            }
-            else {
-                pieces[index] = nnuePieces[piece];
-                squares[index] = square;
-                index++;
-            }
-            CLEAR_BIT(bitboardCopy, square);
+            pieces[index] = nnuePieces[piece];
+            squares[index] = square;
+            index++;
+            pieceAmount++;
         }
     }
-
-    pieces[index] = 0;
-    squares[index] = 0;
 
     // int scoree = (evaluate_nnue(Chessboard::bitboard.sideToMove, pieces, squares) * (100 - Search::fifty) / 100);
     // std::cout << "Score Evalaute(): " << scoree << std::endl;
 
-    return (evaluate_nnue(Chessboard::bitboard.sideToMove, pieces, squares) * (100 - Search::fifty) / 100);
+    // print pieces and squares
+    // std::cout << sizeof(pieces) << std::endl;
+    // for (int i = 0; i < pieceAmount; i++) {
+    //     std::cout << pieces[i] << " ";
+    // }
+    // std::cout << std::endl;
+    // for (int i = 0; i < pieceAmount; i++) {
+    //     std::cout << squares[i] << " ";
+    // }
+    // std::cout << std::endl;
+    // std::cout << "Piece Amount: " << pieceAmount << std::endl;
+
+    // std::cout << "Fifty: " << Search::fifty << std::endl;
+    bool side = Chessboard::bitboard.sideToMove ^ 1;
+    // std::cout << "Score: " << Stockfish::Probe::eval(pieces, squares, pieceAmount, side, Search::fifty) << std::endl;
+    return evaluate_nnue(pieces, squares, pieceAmount, side, Search::fifty);
 }

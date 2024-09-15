@@ -48,20 +48,20 @@ void Search::initHashTable(int mb) {
     hashEntries = hashSize / sizeof(tt);
 
     if (transpositionTable != NULL) {
-        std::cout << "  Clearing hash memory..." << std::endl;
+        // std::cout << "  Clearing hash memory..." << std::endl;
         free(transpositionTable);
     }
 
     transpositionTable = (tt *) malloc(hashEntries * sizeof(tt));
 
     if (transpositionTable == NULL) {
-        std::cout << "  Couldn't allocate memory for hash table! Trying with " << mb / 2 << "MB..." << std::endl;
+        // std::cout << "  Couldn't allocate memory for hash table! Trying with " << mb / 2 << "MB..." << std::endl;
 
         initHashTable(mb / 2);
     }
     else {
         clearTranspositionTable();
-        std::cout << "  Hash Table has been initialized with " << hashEntries << " entries." << std::endl;
+        // std::cout << "  Hash Table has been initialized with " << hashEntries << " entries." << std::endl;
     }
 }
 

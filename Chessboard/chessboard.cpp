@@ -62,16 +62,16 @@ void Chessboard::init() {
     initCharPieces();
     initRandomKeys();
 
-    init_nnue("nn-62ef826d1a6d.nnue");
+    init_nnue("nn-b1a57edbea57.nnue", "nn-baff1ede1f90.nnue");
 
     Search::initHashTable(64); // Default value of 64MB
 
     bool debug = false;
 
     if (debug) {
-        parseFEN("rnbqkb1r/p3p1pp/5n2/8/2BPp3/8/1P3PPP/RNBQK2R w KQkq - 1 10");
+        parseFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
         printBoard();
-        Evaluation::evaluate();
+        std::cout << Evaluation::evaluate() << std::endl;
 
         // int evalScore = evaluate_fen_nnue("rnbqkb1r/p3p1pp/5n2/8/2BPp3/8/1P3PPP/RNBQK2R w KQkq - 1 10");
         // std::cout << "Eval score: " << evalScore << std::endl;
@@ -293,7 +293,7 @@ void Chessboard::printBoard() {
 
     std::cout << "Hash Key:             " << std::hex << hashKey << std::dec << std::endl;
 
-    std::cout << "Fifty:                " << std::hex << Search::fifty << std::dec << std::endl;
+    std::cout << "Fifty:                " << Search::fifty << std::endl;
 
     std::cout << std::endl;
 }
@@ -1022,7 +1022,7 @@ void Chessboard::parsePosition(char *command) {
         }
     }
 
-    printBoard();
+    // printBoard();
 }
 
 void Chessboard::resetTimeControl() {
@@ -1172,8 +1172,13 @@ void Chessboard::communicate() {
 
 void Chessboard::uciLoop() {
 
-    int maxHash = 128;
+    int maxHash = 512;
     int mb = 64;
+    int moveOverhead = 0;
+    int threads = 1;
+    int maxThreads = 1;
+    std::string syzygyPath = "";
+    bool uciShowWDL = false;
 
     // Reset STDIN and STDOUT buffers
     setbuf(stdin, NULL);
@@ -1181,12 +1186,6 @@ void Chessboard::uciLoop() {
 
     // Define User / GUI input buffer
     char input[2000];
-
-    // Print Engine Information
-    std::cout << "id name Iris " << version << std::endl;
-    std::cout << "id author Redux" << std::endl;
-    std::cout << "option name Hash type spin default 64 min 4 max " << maxHash << std::endl;
-    std::cout << "uciok" << std::endl;
 
     while (true) {
         // Reset input buffer
@@ -1225,18 +1224,73 @@ void Chessboard::uciLoop() {
         }
 
         else if (strncmp(input, "uci", 3) == 0) {
-            std::cout << "id name Iris " << version << std::endl;
+            std::cout << "id name Orion" << std::endl;
             std::cout << "id author Redux" << std::endl;
+            std::cout << "option name Move Overhead type spin default " << moveOverhead << " min 0 max 0" << std::endl;
+            std::cout << "option name Threads type spin default " << threads << " min 1 max " << maxThreads << std::endl;
+            std::cout << "option name Hash type spin default 64 min 4 max " << maxHash << std::endl;
+            std::cout << "option name SyzygyPath type string default \"" << syzygyPath << "\"" << std::endl;
+            std::cout << "option name UCI_ShowWDL type check default false" << std::endl;
             std::cout << "uciok" << std::endl;
         }
 
-        else if (!strncmp(input, "setoption name Hash value ", 26)) {
+        else if (strncmp(input, "setoption name Move Overhead value ", 34) == 0) {
+            // moveOverhead = atoi(input + 34);
+            // std::cout << "info string MoveOverhead set to " << moveOverhead << std::endl;
+            continue;
+        }
+
+        else if (strncmp(input, "setoption name Threads value ", 29) == 0) {
+            // threads = atoi(input + 29);
+            // if (threads < 1) { threads = 1; }
+            // if (threads > maxThreads) { threads = maxThreads; }
+            // std::cout << "info string Threads set to " << threads << std::endl;
+            continue;
+        }
+
+        // else if (!strncmp(input, "setoption name Hash value ", 26)) {			
+        //     // init MB
+        //     sscanf(input,"%*s %*s %*s %*s %d", &mb);
+            
+        //     // adjust MB if going beyond the aloowed bounds
+        //     if(mb < 4) mb = 4;
+        //     if(mb > maxHash) mb = maxHash;
+            
+        //     // set hash table size in MB
+        //     std::cout << "    Set hash table size to " << mb << "MB" << std::endl;
+        //     Search::initHashTable(mb);
+        //     continue;
+        // }
+
+        else if (strncmp(input, "setoption name Hash value ", 26) == 0) {
             sscanf(input, "%*s %*s %*s %*s %d", &mb);
             if (mb < 4) { mb = 4; }
-            if (mb > maxHash) { mb = maxHash; }
+            if (mb > maxHash) { 
+                std::cerr << "info string Hash value too large, set to max of " << maxHash << " MB" << std::endl;
+                mb = maxHash;
+            }
 
-            std::cout << "    Set hash table size to " << mb << "MB" << std::endl;
+            // std::cout << "info string Hash set to " << mb << "MB" << std::endl;
             Search::initHashTable(mb);
+            continue;
+        }
+
+        else if (strncmp(input, "setoption name SyzygyPath value ", 31) == 0) {
+            // syzygyPath = std::string(input + 31);
+            // std::cout << "info string SyzygyPath set to \"" << syzygyPath << "\"" << std::endl;
+            continue;
+        }
+
+        else if (strncmp(input, "setoption name UCI_ShowWDL value ", 32) == 0) {
+            // std::string value = std::string(input + 32);
+            // if (value == "true") {
+            //     uciShowWDL = true;
+            //     std::cout << "info string UCI_ShowWDL is set to true, but this feature is not supported." << std::endl;
+            // } else {
+            //     uciShowWDL = false;
+            // }
+            // std::cout << "info string UCI_ShowWDL set to " << (uciShowWDL ? "true" : "false") << std::endl;
+            continue;
         }
     }
 }
