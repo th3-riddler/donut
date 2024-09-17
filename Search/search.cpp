@@ -436,7 +436,7 @@ void Search::searchPosition(int depth) {
 
         score = negamax(alpha, beta, currentDepth);
 
-        // Aspiration Window
+        // Aspiration Windows
         if ((score <= alpha) || (score >= beta)) {
             alpha = -infinity;
             beta = infinity;
