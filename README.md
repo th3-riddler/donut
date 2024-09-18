@@ -20,7 +20,7 @@ To `evaluate` the position, Donut uses Stockfish's NNUE in order to increase the
 1. Big Net: **nn-b1a57edbea57.nnue**
 2. Small Net: **nn-baff1ede1f90.nnue**  
 ## How to use the engine
-To compile and use the engine:
+The main steps to use the engine are:
 1. Compile with the `Makefile`:
 ```bash
 make
