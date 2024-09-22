@@ -20,7 +20,6 @@ int Search::repetitionIndex;
 
 int Search::fifty;
 
-
 inline void Search::enablePvScore(moves *moveList) {
     followPv = false;
 

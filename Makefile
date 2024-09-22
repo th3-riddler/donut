@@ -4,9 +4,9 @@ CFLAGS = -Wall -g -Wno-char-subscripts -Wno-write-strings -Ofast -fomit-frame-po
 
 TARGET = donut
 
-SRCS = main.cpp Chessboard/chessboard.cpp Move/move.cpp Search/search.cpp Evaluation/evaluation.cpp nnueEval/nnueEval.cpp nnue/misc.cpp nnue/bitboard.cpp nnue/evaluate.cpp nnue/position.cpp nnue/probe.cpp nnue/nnue/features/half_ka_v2_hm.cpp nnue/nnue/evaluate_nnue.cpp
+SRCS = main.cpp Chessboard/chessboard.cpp Move/move.cpp Search/search.cpp Evaluation/evaluation.cpp nnueEval/nnueEval.cpp nnue/misc.cpp nnue/bitboard.cpp nnue/evaluate.cpp nnue/position.cpp nnue/probe.cpp nnue/nnue/features/half_ka_v2_hm.cpp nnue/nnue/evaluate_nnue.cpp Polyglot/polyglot.cpp
 
-OBJS = main.o Chessboard/chessboard.o Move/move.o Search/search.o Evaluation/evaluation.o nnueEval/nnueEval.o nnue/misc.o nnue/bitboard.o nnue/evaluate.o nnue/position.o nnue/probe.o nnue/nnue/features/half_ka_v2_hm.o nnue/nnue/evaluate_nnue.o
+OBJS = main.o Chessboard/chessboard.o Move/move.o Search/search.o Evaluation/evaluation.o nnueEval/nnueEval.o nnue/misc.o nnue/bitboard.o nnue/evaluate.o nnue/position.o nnue/probe.o nnue/nnue/features/half_ka_v2_hm.o nnue/nnue/evaluate_nnue.o Reader/reader.o Polyglot/polyglot.o
 
 # Precompiled header
 PCH = Macros/precompiled.hpp

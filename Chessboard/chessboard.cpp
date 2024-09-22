@@ -6,6 +6,8 @@ TODO:
 - Change the generateMoves function to generate all legal moves in one go
 */
 
+int const Chessboard::polyPieces[12] = { 1, 3, 5, 7, 9, 11, 0, 2, 4, 6, 8, 10 };
+
 char Chessboard::asciiPieces[13] = "PNBRQKpnbrqk";
 const char* Chessboard::squareToCoordinates[64] = {
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
@@ -56,7 +58,6 @@ uint64_t Chessboard::castleKeys[16];
 uint64_t Chessboard::sideKey;
 uint64_t Chessboard::hashKey = 0ULL;
 
-
 void Chessboard::init() {
 
     initCharPieces();
@@ -69,9 +70,9 @@ void Chessboard::init() {
     bool debug = false;
 
     if (debug) {
-        parseFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
+        parseFEN("rnbqkbnr/p1pppppp/8/8/P6P/R1p5/1P1PPPP1/1NBQKBNR b Kkq - 0 4");
         printBoard();
-        std::cout << Evaluation::evaluate() << std::endl;
+        // std::cout << Evaluation::evaluate() << std::endl;
 
         // int evalScore = evaluate_fen_nnue("rnbqkb1r/p3p1pp/5n2/8/2BPp3/8/1P3PPP/RNBQK2R w KQkq - 1 10");
         // std::cout << "Eval score: " << evalScore << std::endl;
@@ -80,6 +81,57 @@ void Chessboard::init() {
         uciLoop();
     }
     
+}
+
+bool Chessboard::canPawnEnPassant() {
+    int targetPawn = bitboard.sideToMove == white ? P : p;
+    if(bitboard.enPassantSquare != noSquare) {
+        int squareWithPawn = bitboard.sideToMove == white ? bitboard.enPassantSquare - 8 : bitboard.enPassantSquare + 8;
+        if (GET_BIT(bitboard.bitboards[targetPawn], (squareWithPawn + 1)) || GET_BIT(bitboard.bitboards[targetPawn], (squareWithPawn - 1))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+uint64_t Chessboard::polyKeyFromBoard() {
+    
+    int rank, file, polyPiece, offset;
+    uint64_t finalKey = 0ULL;
+
+    for (int square = 0; square < 64; square++) {
+        for (int piece = P; piece <= k; piece++) {
+            if (!GET_BIT(bitboard.bitboards[piece], square)) {
+                continue;
+            }
+
+            polyPiece = polyPieces[piece];
+            rank = square / 8;
+            file = square % 8;
+            finalKey ^= Polyglot::Random64Poly[(64 * polyPiece) + (8 * rank) + file];
+        }
+    }
+
+    // Castling Key
+    offset = 768;
+    if (bitboard.castlingRights & wk) finalKey ^= Polyglot::Random64Poly[offset + 0];
+    if (bitboard.castlingRights & wq) finalKey ^= Polyglot::Random64Poly[offset + 1];
+    if (bitboard.castlingRights & bk) finalKey ^= Polyglot::Random64Poly[offset + 2];
+    if (bitboard.castlingRights & bq) finalKey ^= Polyglot::Random64Poly[offset + 3];
+
+    // En passant Key
+    offset = 772;
+    if (canPawnEnPassant()) {
+        file = bitboard.enPassantSquare % 8;
+        finalKey ^= Polyglot::Random64Poly[offset + file];
+    }
+
+    // Side Key
+    if (bitboard.sideToMove == white) {
+        finalKey ^= Polyglot::Random64Poly[780];
+    }
+    
+    return finalKey;
 }
 
 void Chessboard::initRandomKeys() {
@@ -292,6 +344,8 @@ void Chessboard::printBoard() {
     std::cout << "Castling:             " << (bitboard.castlingRights & wk ? "K" : "-") << (bitboard.castlingRights & wq ? "Q" : "-") << (bitboard.castlingRights & bk ? "k" : "-") << (bitboard.castlingRights & bq ? "q" : "-") << std::endl;
 
     std::cout << "Hash Key:             " << std::hex << hashKey << std::dec << std::endl;
+
+    std::cout << "Polyglot Hash Key:    " << std::hex << polyKeyFromBoard() << std::dec << std::endl;
 
     std::cout << "Fifty:                " << Search::fifty << std::endl;
 

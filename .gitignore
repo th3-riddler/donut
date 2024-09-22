@@ -6,3 +6,4 @@ donut
 Macros/precompiled.hpp.gch
 reduxinator*
 engineVersions/
+*.bin

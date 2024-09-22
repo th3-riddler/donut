@@ -20,6 +20,7 @@
 #include "../Search/search.hpp"
 #include "../Evaluation/evaluation.hpp"
 #include "../nnueEval/nnueEval.hpp"
+#include "../Polyglot/polyglot.hpp"
 
 class Move;
 class Evaluation;
@@ -40,6 +41,11 @@ class Chessboard {
         static uint64_t castleKeys[16];
         static uint64_t sideKey;
         static uint64_t hashKey;
+
+        static uint64_t polyKeyFromBoard();
+        static const int polyPieces[12];
+
+        static bool canPawnEnPassant();
 
         static char asciiPieces[13];
         static const char *unicodePieces[13]; // ♔ 	♕ 	♖ 	♗ 	♘ 	♙ 	♚ 	♛ 	♜ 	♝ 	♞ 	♟
