@@ -6,6 +6,7 @@
 #include "../nnueEval/nnueEval.hpp"
 #include "../Macros/macros.hpp"
 #include "../Move/move.hpp"
+#include "../Reader/reader.hpp"
 
 struct moves;
 
@@ -31,6 +32,8 @@ class Search {
         static void initHashTable(int mb);
 
         static int ply;
+
+        static Reader::BookMoves bookMoves;
 
         static int killerMoves[2][maxPly];
         static int historyMoves[12][64];

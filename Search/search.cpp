@@ -20,6 +20,8 @@ int Search::repetitionIndex;
 
 int Search::fifty;
 
+Reader::BookMoves Search::bookMoves;
+
 inline void Search::enablePvScore(moves *moveList) {
     followPv = false;
 
@@ -425,8 +427,23 @@ void Search::searchPosition(int depth) {
     int alpha = -infinity;
     int beta = infinity;
 
+    if (Chessboard::useBook) {
+        bookMoves = Chessboard::book.GetBookMoves(Chessboard::polyKeyFromBoard());
+
+        if (bookMoves.size() > 0) {
+            std::string move = Reader::ConvertBookMoveToUci(Reader::RandomBookMove(bookMoves));
+            move = move == "e1h1" ? "e1g1" : move;
+            move = move == "e8h8" ? "e8g8" : move;
+            move = move == "e1a1" ? "e1c1" : move;
+            move = move == "e8a8" ? "e8c8" : move;
+            std::cout << "bestmove " << move << std::endl;
+            return;
+        }
+    }
+
     // Iterative Deepening
     for (int currentDepth = 1; currentDepth <= depth; currentDepth++) {
+        Chessboard::useBook = false;
         if (Chessboard::stopped) {
             break;
         }

@@ -21,6 +21,7 @@
 #include "../Evaluation/evaluation.hpp"
 #include "../nnueEval/nnueEval.hpp"
 #include "../Polyglot/polyglot.hpp"
+#include "../Reader/reader.hpp"
 
 class Move;
 class Evaluation;
@@ -31,9 +32,12 @@ class Chessboard {
     public:
         static void parseFEN(char *fen);
 
+        static Reader::Book book;
         static BitBoard bitboard;
         static uint64_t nodes;
         static bool stopped;
+
+        static bool useBook;
 
         // Zobrist Keys
         static uint64_t pieceKeys[12][64];

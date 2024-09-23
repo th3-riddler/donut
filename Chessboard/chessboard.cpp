@@ -58,12 +58,17 @@ uint64_t Chessboard::castleKeys[16];
 uint64_t Chessboard::sideKey;
 uint64_t Chessboard::hashKey = 0ULL;
 
+Reader::Book Chessboard::book;
+bool Chessboard::useBook = true;
+
 void Chessboard::init() {
 
     initCharPieces();
     initRandomKeys();
 
     init_nnue("nn-b1a57edbea57.nnue", "nn-baff1ede1f90.nnue");
+
+    book.Load("cerebellum.bin");
 
     Search::initHashTable(64); // Default value of 64MB
 
@@ -1265,6 +1270,7 @@ void Chessboard::uciLoop() {
         }
 
         else if (strncmp(input, "ucinewgame", 10) == 0) {
+            Chessboard::useBook = true;
             parsePosition("position startpos");
             Search::clearTranspositionTable();
         }
@@ -1285,6 +1291,7 @@ void Chessboard::uciLoop() {
             std::cout << "option name Hash type spin default 64 min 4 max " << maxHash << std::endl;
             std::cout << "option name SyzygyPath type string default \"" << syzygyPath << "\"" << std::endl;
             std::cout << "option name UCI_ShowWDL type check default false" << std::endl;
+            std::cout << "option name OwnBook type check default true" << std::endl;
             std::cout << "uciok" << std::endl;
         }
 
@@ -1346,5 +1353,15 @@ void Chessboard::uciLoop() {
             // std::cout << "info string UCI_ShowWDL set to " << (uciShowWDL ? "true" : "false") << std::endl;
             continue;
         }
+        else if (strncmp(input, "setoption name OwnBook value ", 29) == 0) {
+            char *value = NULL;
+            value = strstr(input, "true");
+            if (value != NULL) {
+                useBook = true;
+            }
+            else {
+                useBook = false;
+            }
+        } 
     }
 }

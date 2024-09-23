@@ -6,5 +6,6 @@ int main(int argc, char* argv[]) {
     Chessboard::init();
 
     free(Search::transpositionTable);
+    Chessboard::book.Clear();
     return 0;
 }
