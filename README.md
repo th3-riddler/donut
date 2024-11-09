@@ -1,4 +1,15 @@
 # Donut Chess Engine
+
+<br>
+<div align="center">
+
+![language](https://img.shields.io/github/languages/top/th3-riddler/donut?style=for-the-badge&logo=cplusplus&color=blue)
+![GitHub](https://img.shields.io/badge/github-000000?style=for-the-badge&logo=github)
+![OS](https://img.shields.io/badge/linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+
+</div>
+<br>
+
 <img src="donut_img.jpg" width=300 height=300>
 
 ## What is Donut and how it works
