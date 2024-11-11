@@ -7,10 +7,11 @@
 ![GitHub](https://img.shields.io/badge/github-000000?style=for-the-badge&logo=github)
 ![OS](https://img.shields.io/badge/linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 
+<img src="donut_img.jpg" width=300 height=300>
+
 </div>
 <br>
 
-<img src="donut_img.jpg" width=300 height=300>
 
 ## What is Donut and how it works
 **Donut** is a Chess Engine developed in **C++** and based on the [UCI](https://en.wikipedia.org/wiki/Universal_Chess_Interface) format.  
